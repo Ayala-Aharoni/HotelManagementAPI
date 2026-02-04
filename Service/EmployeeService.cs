@@ -55,7 +55,7 @@ namespace Service
                 Fullname =R.Fullname,
                 Email = R.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(R.PassWord),
-                Role = R.Role,
+                Role = R.Role.ToString(),
                 CategoryId = category.CategoryId
             };
             await _employeeRepository.AddItem(employee);

@@ -11,12 +11,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
+//זה בשביל שהוא ימיר אינמים ממספרים למחרוזת
+builder.Services.AddControllers()
+    .AddJsonOptions(o =>
+    {
+       
+        o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // Add services to the container.
 

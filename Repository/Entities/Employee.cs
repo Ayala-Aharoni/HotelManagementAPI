@@ -14,26 +14,21 @@ namespace Repository.Entities
     {
         public int EmployeeId { get; set; }
 
-        [Required(ErrorMessage = "שם מלא חובה")]
-        [StringLength(100, MinimumLength = 2, ErrorMessage = "שם חייב להיות בין 2 ל-100 תווים")]
+        [StringLength(100, MinimumLength = 2)]
         public string Fullname { get; set; }
 
-        [Required(ErrorMessage = "תפקיד חובה")]
         [StringLength(50)]
         public string Role { get; set; }
 
-        [Required(ErrorMessage = "אימייל חובה")]
-        [EmailAddress(ErrorMessage = "כתובת אימייל לא תקינה")]
+        [EmailAddress]
         public string Email { get; set; }
 
         public int CategoryId { get; set; }
 
         [ForeignKey("CategoryId")]
-        public Category Category { get; set; }
+        public Category? Category { get; set; } // EF navigation — nullable
 
-        [Required(ErrorMessage = "סיסמה חובה")]
-        [RegularExpression(@"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$",
-            ErrorMessage = "סיסמה חייבת להכיל לפחות 6 תווים, אות אחת ומספר אחד")]
+        // store the hash here (validate the plain password in DTO/service)
         public string PasswordHash { get; set; }
 
         public bool IsAviable { get; set; }

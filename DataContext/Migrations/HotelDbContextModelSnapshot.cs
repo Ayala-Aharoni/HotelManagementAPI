@@ -112,7 +112,6 @@ namespace DataContext.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -165,13 +164,13 @@ namespace DataContext.Migrations
                     b.HasOne("Repository.Entities.Category", "Category")
                         .WithMany("CategoryWords")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Repository.Entities.Word", "Word")
                         .WithMany("CategoryWords")
                         .HasForeignKey("WordId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");
@@ -184,7 +183,7 @@ namespace DataContext.Migrations
                     b.HasOne("Repository.Entities.Category", "Category")
                         .WithMany("Employees")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");
@@ -201,7 +200,7 @@ namespace DataContext.Migrations
                     b.HasOne("Repository.Entities.Employee", "Employee")
                         .WithMany("Requests")
                         .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");

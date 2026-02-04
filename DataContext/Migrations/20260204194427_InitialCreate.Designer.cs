@@ -12,7 +12,7 @@ using Repository.Entities;
 namespace DataContext.Migrations
 {
     [DbContext(typeof(HotelDbContext))]
-    [Migration("20260130134612_InitialCreate")]
+    [Migration("20260204194427_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -167,13 +167,13 @@ namespace DataContext.Migrations
                     b.HasOne("Repository.Entities.Category", "Category")
                         .WithMany("CategoryWords")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Repository.Entities.Word", "Word")
                         .WithMany("CategoryWords")
                         .HasForeignKey("WordId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");
@@ -186,7 +186,7 @@ namespace DataContext.Migrations
                     b.HasOne("Repository.Entities.Category", "Category")
                         .WithMany("Employees")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");
@@ -203,7 +203,7 @@ namespace DataContext.Migrations
                     b.HasOne("Repository.Entities.Employee", "Employee")
                         .WithMany("Requests")
                         .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");

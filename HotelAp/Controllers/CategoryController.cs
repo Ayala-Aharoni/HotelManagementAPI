@@ -22,6 +22,8 @@ namespace HotelAp.Controllers
 
         // GET: api/<CategoryController>
         [HttpGet]
+        // [Authorize(Roles = "Admin")]//  פה רק מנהל יוכל למחוק עובד עשיתי בינתים ירוק נא לשנותת!!!!!!! 
+
         public async Task<IEnumerable<Category>> Get()
         {
             return await repository.GetAll();

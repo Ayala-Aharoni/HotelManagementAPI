@@ -40,7 +40,7 @@ namespace HotelAp.Controllers
             return await repository.GetById(id);
         }
 
-
+        [Authorize(Roles = "Admin")]
         // POST api/<EmployeeController>
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterEmployeeDTO dto)
