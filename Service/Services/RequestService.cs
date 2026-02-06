@@ -6,15 +6,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-namespace Service
+using Service.Interfaces;
+namespace Service.Services
 {
-    public  class RequestService
+    public  class RequestService //: IAlgorithmc
     {
-        private readonly IRepository<Request> _requestRepository;
+        private readonly IRepository<Request> requestRepository;
         public RequestService(IRepository<Request> requestRepository)
         {
-            _requestRepository = requestRepository;
+            requestRepository = requestRepository;
         }
+
     }
 }

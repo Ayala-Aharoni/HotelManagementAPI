@@ -2,6 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Repository.Entities;
 using Repository.Interfaces;
+using Service.Interfaces;
+using Service.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +20,9 @@ namespace Service
             services.AddScoped<CategoryService>();
             services.AddScoped<WordService>();
             services.AddScoped<RequestService>();
+
+            //זה למחלקת ניתוח המילים
+            services.AddScoped<ITextAnalyzer, TextAnalyzer>();
 
             return services;
         }

@@ -24,8 +24,8 @@ builder.Services.AddControllers()
         o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
-// Add services to the container.
 
+// Add services to the container.
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -83,28 +83,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 
 //מכאן כל מה שתוך ירוק ארוך זה שלי :)
-
 /////////////////////////////////////////
 ///בכל בקשה יוצר מופע-עבור גולש
 //כל פעם שמשהו מבקש מופע של איקונטס וזה קורה לי הרי בתוך הרפוסיטורי אני ישלח לו את הדטהביס - הוטל!!
 builder.Services.AddScoped<Icontext,HotelDbContext>();
 
-
 // Repositories
 builder.Services.AddRepositories();
-
 
 // Services
 builder.Services.AddServices();
 
-
 ////////////////////////////////////////
 ///////////////////////////////////////
-
-
-
-
-
 
 var app = builder.Build();
 app.UseSwagger();
@@ -114,18 +105,9 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty; // פותח את ה-UI ישר ב-root
 });
 
-// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-////{
-//   app.UseSwagger();
-///   app.UseSwaggerUI();
-//}
-
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
-
 
 app.MapControllers();
 

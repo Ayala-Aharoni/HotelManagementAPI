@@ -33,7 +33,7 @@ namespace HotelAp.Controllers
 
         // GET api/<EmployeeController>/5
 
-        //[Authorize(Roles = "Admin")] זה כאילו עשיתי בינתים אני רוצה שלהציג את כל העובדים רק המנהל יוכל
+        // [Authorize(Roles = "Admin")]//  פה רק מנהל יוכל למחוק עובד עשיתי בינתים ירוק נא לשנותת!!!!!!! 
         [HttpGet("{id}")]
         public async Task<Employee> Get(int id)
         {
@@ -64,7 +64,7 @@ namespace HotelAp.Controllers
             }
         }
 
-
+        // [Authorize(Roles = "Admin")]//  פה רק מנהל יוכל למחוק עובד עשיתי בינתים ירוק נא לשנותת!!!!!!! 
         // PUT api/<EmployeeController>/5
         [HttpPut("{id}")]
         public async void Put(int id, [FromBody] Employee Emp)
@@ -73,6 +73,7 @@ namespace HotelAp.Controllers
 
         }
 
+       // [Authorize(Roles = "Admin")]//  פה רק מנהל יוכל למחוק עובד עשיתי בינתים ירוק נא לשנותת!!!!!!! 
         // DELETE api/<EmployeeController>/5
         [HttpDelete("{id}")]
         public async void Delete(int id)
