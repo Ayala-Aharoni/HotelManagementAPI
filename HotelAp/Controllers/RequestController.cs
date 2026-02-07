@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Common.DTO;
+using Microsoft.AspNetCore.Mvc;
+using Repository.Entities;
+using Repository.Interfaces;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -8,24 +11,31 @@ namespace HotelAp.Controllers
     [ApiController]
     public class RequestController : ControllerBase
     {
+        private readonly IRepository<Request> repository;
+        //פה אני חייבתתת עוד תכונה שזה הסרביס!
+
+
+
         // GET: api/<RequestController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        public async Task<IEnumerable<Request>> Get()
         {
-            return new string[] { "value1", "value2" };
+            return await repository.GetAll();
         }
 
         // GET api/<RequestController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<Request> Get(int id)
         {
-            return "value";
+            return await repository.GetById(id);
         }
 
         // POST api/<RequestController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public void Post([FromBody] RequestDTO Req)
         {
+            //פה אני צריכה לעשות!!! 
+
         }
 
         // PUT api/<RequestController>/5

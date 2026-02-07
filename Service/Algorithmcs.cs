@@ -4,11 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.DTO
+namespace Service
 {
-    public class RequestDTO
+    internal class Algorithmcs
     {
-        public string Description { get; set; }
-
     }
 }
