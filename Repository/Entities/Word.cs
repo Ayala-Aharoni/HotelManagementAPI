@@ -11,11 +11,10 @@ namespace Repository.Entities
     {
         public int WordId { get; set; }
         public string Text { get; set; }
-        public int CategoryId { get; set; }
+        //public int CategoryId { get; set; }
 
-        [ForeignKey("CategoryId")]
-        public Category Category { get; set; }
-        public int Frequency { get; set; }
+        //[ForeignKey("CategoryId")]
+        //public Category Category { get; set; }
         public ICollection<CategoryWord> CategoryWords { get; set; }
       = new List<CategoryWord>();
     }

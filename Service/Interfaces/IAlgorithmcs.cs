@@ -10,12 +10,11 @@ namespace Service.Interfaces
     {
         void GetRequest(string description);
 
-       
-        string[] ParseAndFilterWords();
 
-        
-        string DetermineTopCategory();
+        //זה כבר עשיתי!
+        //מחזיר רשימת מילים רלוונטיות מתוך התיאור של הבקשה!
+        List<string> AnalisisRequest();
 
-        void SendNotification(string category);
+
     }
 }

@@ -20,6 +20,8 @@ namespace Repository.Entities
         public int WordId { get; set; }
         [ForeignKey("WordId")]
         public Word Word { get; set; }
+        public int Frequency { get; set; }
+
     }
 
 }

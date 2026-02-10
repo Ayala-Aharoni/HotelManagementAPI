@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Service.Interfaces
 {
-    internal interface ISimiliarWords
+    public interface ISimiliarWords
     {
+      //  List<string> GetSimiliarWords(string word); 
     }
 }

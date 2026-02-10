@@ -36,15 +36,16 @@ namespace Repository.Repositories
 
         public async Task<Word> UpdateItem(int id, Word item)
         {
-            var existing = await ctx.Words.FindAsync(id);
-            if (existing == null) return null;
-
-            existing.Text = item.Text;
-            existing.CategoryId = item.CategoryId;
-            existing.Frequency = item.Frequency;
-
+            var existingWord = await ctx.Words.FindAsync(id);
+            if (existingWord == null)
+            {
+                return null;
+            }
+            existingWord.Text = item.Text;
             await ctx.Save();
-            return existing;
+
+            return existingWord;
+
         }
 
         public async Task DeleteItem(int id)

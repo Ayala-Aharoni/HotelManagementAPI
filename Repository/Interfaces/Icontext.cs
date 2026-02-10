@@ -14,7 +14,7 @@ namespace Repository.Interfaces
         public DbSet<Request> Requests { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Word> Words { get; set; }
-
+        DbSet<CategoryWord> CategoryWords { get; set; }
         Task Save();
 
     }

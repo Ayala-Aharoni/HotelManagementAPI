@@ -16,8 +16,7 @@ namespace Repository.Entities
         public DbSet<Request> Requests { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Word> Words { get; set; }
-        public DbSet<CategoryWord> CategoriesWords { get; set; }
-
+        public DbSet<CategoryWord> CategoryWords { get; set; }
 
         public async Task Save()
         {

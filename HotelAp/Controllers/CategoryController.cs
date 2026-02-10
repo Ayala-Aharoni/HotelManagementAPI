@@ -38,6 +38,7 @@ namespace HotelAp.Controllers
 
 
         // POST api/<CategoryController>
+        
         [HttpPost]
         [HttpPost("AddCategory")]
         public async Task<IActionResult> AddCategory([FromBody] CategoryDTO dto)

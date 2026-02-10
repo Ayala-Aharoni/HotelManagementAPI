@@ -19,21 +19,18 @@ namespace Service.Services
                _wordRepository= wordRepository;
             }
         public async Task<Word> AddWordAsync(WordDTO dto)
-        {
-         
-            var existing = (await _wordRepository.GetAll())
-                           .FirstOrDefault(w =>
-                               w.Text.ToLower() == dto.Text.ToLower() &&
-                               w.CategoryId == dto.CategoryId);
+        {         
+            var allWords = await _wordRepository.GetAll();
+            var existing = allWords.FirstOrDefault(w => w.Text.ToLower() == dto.Text.ToLower());
 
             if (existing != null)
-                throw new Exception("המילה כבר קיימת באותה קטגוריה");
+            {
+                return existing;
+            }
 
             var word = new Word
             {
-                Text = dto.Text,
-                CategoryId = dto.CategoryId,
-                Frequency = dto.Frequency
+                Text = dto.Text
             };
 
             return await _wordRepository.AddItem(word);

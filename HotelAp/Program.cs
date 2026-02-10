@@ -92,7 +92,7 @@ builder.Services.AddScoped<Icontext,HotelDbContext>();
 builder.Services.AddRepositories();
 
 // Services
-builder.Services.AddServices();
+builder.Services.AddServices(builder.Configuration);
 
 ////////////////////////////////////////
 ///////////////////////////////////////
