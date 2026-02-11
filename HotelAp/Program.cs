@@ -1,3 +1,4 @@
+using HotelAp.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.IdentityModel.Tokens;
@@ -98,6 +99,7 @@ builder.Services.AddServices(builder.Configuration);
 ///////////////////////////////////////
 
 var app = builder.Build();
+app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

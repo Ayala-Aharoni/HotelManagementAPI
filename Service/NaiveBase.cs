@@ -125,7 +125,7 @@ namespace Service
                 else
                 {
                     // אם לא נמצא - משתמשים בלוגיקה של משי למציאת מילים דומות
-                   // countsForWord = await GetAverageCountsForSimilarWords(word);
+                 //   countsForWord = await GetAverageCountsForSimilarWords(word);
                 }
 
 
@@ -154,7 +154,7 @@ namespace Service
         //{
         //    // 1. קוראים לפונקציה של משי/האלגוריתם שמוצא רשימת מילים דומות (Strings)
         //    // הערה: את צריכה לוודא שיש לך פונקציה כזו שמחזירה List<string>
-        //      List<string> similarWords = await FindSimilarWords(word);
+        //    List<string> similarWords = await FindSimilarWords(word);
 
         //    if (similarWords == null || !similarWords.Any())
         //        return null;
@@ -186,9 +186,6 @@ namespace Service
         //        }
         //        return sumCounts;
         //    }
-
-
-
         //    return null;
         //}
 
@@ -196,7 +193,7 @@ namespace Service
 
 
 
-      
+
          public void AddNewWordToDictinary(string wordText, int categoryId, int wordId)
         {
            

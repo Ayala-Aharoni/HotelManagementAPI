@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Repository.Entities;
+using Repository.Exception;
 using Repository.Interfaces;
 using Repository.Repositories;
 using System;
@@ -79,7 +80,7 @@ namespace Service.Services
             var employee = await _employeeRepository.GetByEmailAsync(l.Email);
 
             if (employee == null || !BCrypt.Net.BCrypt.Verify(l.Password, employee.PasswordHash))
-                throw new Exception("אימייל או סיסמה שגויים");
+                throw new AppException.AuthException();
 
 
 

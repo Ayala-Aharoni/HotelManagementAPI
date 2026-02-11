@@ -1,5 +1,6 @@
 ﻿using DataContext.DTO;
 using Repository.Entities;
+using Repository.Exception;
 using Repository.Interfaces;
 using Repository.Repositories;
 using System;
@@ -25,8 +26,7 @@ namespace Service.Services
                            .FirstOrDefault(c => c.CategoryName.ToLower() == dto.CategoryName.ToLower());
 
             if (existing != null)
-                throw new Exception("קטגוריה כבר קיימת");
-
+                throw new EntityAlreadyExistsException("קטגוריה", dto.CategoryName);
             var category = new Category
             {
                 CategoryName = dto.CategoryName
