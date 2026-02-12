@@ -15,6 +15,7 @@ namespace Service.Interfaces
          Task<int> PredictCategory(List<string> words);
 
         void AddNewWordToDictinary(string wordText, int categoryId, int wordId);
+        int GetIndex(int categoryId);   
         Dictionary<string, WordClassificationDTO> WordStatistics { get; }
 
 

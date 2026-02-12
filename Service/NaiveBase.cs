@@ -23,6 +23,8 @@ namespace Service
         public Dictionary<string, WordClassificationDTO> WordStatistics { get; private set; } = new Dictionary<string, WordClassificationDTO>();
         private int[] _totalWordsPerCategory;
 
+        private Dictionary<int, int> _categoryIdToIndex = new Dictionary<int, int>();//זה בשביל מיפוי האינדסים 
+
         private int _vocabularySize;
 
         private int _numCategories;
@@ -53,8 +55,10 @@ namespace Service
             {
                 string text = cw.Word.Text;
 
-                int catIdx = categories.FindIndex(c => c.CategoryId == cw.CategoryId);
-                if (catIdx == -1) continue;
+                if (!_categoryIdToIndex.TryGetValue(cw.CategoryId, out int catIdx))
+                {
+                    continue; // אם ה-ID לא קיים במילון המיפוי, נדלג
+                }
 
                 // אם המילה לא קיימת – צור DTO חדש
                 if (!WordStatistics.ContainsKey(text))
@@ -73,11 +77,24 @@ namespace Service
 
             _vocabularySize = WordStatistics.Count;
         }
+        //זה בשביל ההאינדקסים של הקטגוריות
+        public int GetIndex(int categoryId)
+        {
+            return _categoryIdToIndex[categoryId];
+        }
         public async Task LoadModel()
         {
             var categories = await _Categoryrepo.GetAll();
             _numCategories = categories.Count();
 
+            //פה אני ממלא את המילון שלי הקטגוריות 
+            _categoryIdToIndex.Clear();
+            for (int i = 0; i < categories.Count; i++)
+            {
+                // המפתח הוא ה-ID מהדאטה-בייס, הערך הוא המיקום במערך (0, 1, 2...)
+                _categoryIdToIndex[categories[i].CategoryId] = i;
+            }
+            
 
             var allRequests = await _Requestrepo.GetAll();
             int totalAllRequests = allRequests.Count();
@@ -92,7 +109,17 @@ namespace Service
              _categoryLogPriors = new double[_numCategories];//כאן אני שמה כבר את ההסתברות של הקטגוריה עצמהה 
             for (int i = 0; i < _numCategories; i++)
             {
-                double pCat = (double)_categoryRequestsCounts[i] / totalAllRequests;
+                double pCat;
+                if (totalAllRequests == 0)
+                {
+                    // אין בקשות כלל → נותנים הסתברות שווה לכל קטגוריה
+                    pCat = 1.0 / _numCategories;
+                }
+                else
+                {
+                    pCat = (double)_categoryRequestsCounts[i] / totalAllRequests;
+                }
+
                 _categoryLogPriors[i] = Math.Log(pCat);
             }
 
@@ -146,7 +173,7 @@ namespace Service
                     bestCategoryIndex = i;
             }
 
-            return bestCategoryIndex;
+            return _categoryIdToIndex.FirstOrDefault(x => x.Value == bestCategoryIndex).Key;
         }
 
 
@@ -194,27 +221,37 @@ namespace Service
 
 
 
-         public void AddNewWordToDictinary(string wordText, int categoryId, int wordId)
+        public void AddNewWordToDictinary(string wordText, int categoryId, int wordId)
         {
-           
+            // 1. קבלת האינדקס הבטוח באמצעות הפונקציה שיצרת
+            int catIdx = GetIndex(categoryId);
+
+            // בדיקת בטיחות: אם משום מה הקטגוריה לא קיימת במילון, לא נמשיך כדי למנוע קריסה
+            if (catIdx == -1)
+            {
+                // אפשר להוסיף כאן לוג או שגיאה, כרגע פשוט נצא כדי לא לשבור את התוכנית
+                return;
+            }
+
             var newDto = new WordClassificationDTO(_numCategories)
             {
                 Word = wordText,
-                WordId = wordId // ה-ID שקיבלנו הרגע מה-DB
+                WordId = wordId
             };
 
-            // 2. עדכון המערך: שמים 1 במקום של הקטגוריה המתאימה
-            // (זוכרת? מורידים 1 כי המערך מתחיל מ-0)
-            newDto.CategoryCounts[categoryId - 1] = 1;
+            // 2. עדכון המערך ב-DTO: משתמשים באינדקס הממופה במקום ב-ID פחות 1
+            newDto.CategoryCounts[catIdx] = 1;
 
-            // 3. הוספה לדיקשנרי (המפתח הוא הטקסט של המילה)
+            // 3. הוספה לדיקשנרי הסטטיסטיקות
             WordStatistics.Add(wordText, newDto);
 
             // 4. עדכון משתני העזר של האלגוריתם
-            _vocabularySize++; // גודל אוצר המילים גדל ב-1
-            _totalWordsPerCategory[categoryId - 1]++; // סך המילים בקטגוריה הספציפית גדל ב-1
-        }
+            _vocabularySize++;
 
+            _totalWordsPerCategory[catIdx]++;
+
+           
+        }
     }
 
 

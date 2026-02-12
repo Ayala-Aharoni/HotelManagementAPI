@@ -13,59 +13,64 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Service
 {
-        public class Algorithmics
+    public class Algorithmics
+    {
+        private readonly ITextAnalyzer _textAnalyzer;
+        private readonly INaiveBase _naiveBayes;
+        private readonly IRepository<Word> _wordRepo;
+        private readonly ICategoryWordRepository _categoryWordRepo;
+
+
+        public Algorithmics(ITextAnalyzer textAnalyzer, INaiveBase naiveBayes, IRepository<Word> wordRepo, ICategoryWordRepository categoryWordRepo)
         {
-            private readonly ITextAnalyzer _textAnalyzer;
-            private readonly INaiveBase _naiveBayes;
-            private readonly IRepository<Word> _wordRepo;
-            private readonly ICategoryWordRepository _categoryWordRepo;
+            _textAnalyzer = textAnalyzer;
+            _naiveBayes = naiveBayes;
+            _wordRepo = wordRepo;
+            _categoryWordRepo = categoryWordRepo;
 
+        }
+        public List<string> AnalisisRequest()
+        {
+            List<string> SplitToSentencesLst = new List<string>();
+            SplitToSentencesLst = _textAnalyzer.SplitToSentences("בינתים"/* עדין לה הבנתי מה אני אמורה לשלוח מי מפעיל את זה*/);
+            SplitToSentencesLst.RemoveAll(x => x.Length < 2);
+            List<string> relevantWords = new List<string>();
+            if (SplitToSentencesLst.Count() == 0) // In a case that fails to access the Hebrew NLP library
+                return null;
 
-            public Algorithmics(ITextAnalyzer textAnalyzer, INaiveBase naiveBayes, IRepository<Word> wordRepo,ICategoryWordRepository categoryWordRepo)
+            foreach (string sentences in SplitToSentencesLst)
             {
-                _textAnalyzer = textAnalyzer;
-                _naiveBayes = naiveBayes;
-                _wordRepo = wordRepo;
-                 _categoryWordRepo= categoryWordRepo;   
-
-            }
-            public List<string> AnalisisRequest()
-            {
-                List<string> SplitToSentencesLst = new List<string>();
-                SplitToSentencesLst = _textAnalyzer.SplitToSentences("בינתים"/* עדין לה הבנתי מה אני אמורה לשלוח מי מפעיל את זה*/);
-                SplitToSentencesLst.RemoveAll(x => x.Length < 2);
-                List<string> relevantWords = new List<string>();
-                if (SplitToSentencesLst.Count() == 0) // In a case that fails to access the Hebrew NLP library
-                    return null;
-
-                foreach (string sentences in SplitToSentencesLst)
-                {
-                    var lst = _textAnalyzer.AnalyzeSentence(sentences);
-                    var forConcat = _textAnalyzer.RemoveIrrelevantWords(lst);
-                    relevantWords = relevantWords.Concat(forConcat).ToList();
-                }
-
-                return relevantWords;
+                var lst = _textAnalyzer.AnalyzeSentence(sentences);
+                var forConcat = _textAnalyzer.RemoveIrrelevantWords(lst);
+                relevantWords = relevantWords.Concat(forConcat).ToList();
             }
 
+            return relevantWords;
+        }
 
 
-            //פה עוד לא עדכנתי את הדיקשנרי, רק הוספתי את המילים ל-DB, צריך להוסיף גם לעדכון הדיקשנרי!!!!!!!!!!!!!!!!!!!!!
 
-            public async Task InsertWordsIntoWordTable(List<string> analysisWords, int mycategoryId)
+        //פה עוד לא עדכנתי את הדיקשנרי, רק הוספתי את המילים ל-DB, צריך להוסיף גם לעדכון הדיקשנרי!!!!!!!!!!!!!!!!!!!!!
+
+        public async Task InsertWordsIntoWordTable(List<string> analysisWords, int mycategoryId)
+        {
+            foreach (var wordText in analysisWords)
             {
-                foreach (var wordText in analysisWords)
+                // 1. האם המילה קיימת בדיקשנרי?
+                if (_naiveBayes.WordStatistics.TryGetValue(wordText, out WordClassificationDTO WordClassificationDTO))
                 {
-                    // 1. האם המילה קיימת בדיקשנרי?
-                    if (_naiveBayes.WordStatistics.TryGetValue(wordText, out WordClassificationDTO WordClassificationDTO))
+                    // שולפים את האינדקס הנכון כדי להשתמש בו בבדיקה ובעדכון
+                    int catIdx = _naiveBayes.GetIndex(mycategoryId);
+
+                    if (catIdx != -1) // תמיד כדאי לבדוק ליתר ביטחון
                     {
                         // 2. המילה קיימת! עכשיו נבדוק במערך אם היא קיימת בקטגוריה הספציפית
-                        // נניח ש-categoryId הוא האינדקס
-                        if (WordClassificationDTO.CategoryCounts[mycategoryId - 1] > 0)
+                        // כאן התיקון: משתמשים ב-catIdx במקום ב- (mycategoryId - 1)
+                        if (WordClassificationDTO.CategoryCounts[catIdx] > 0)
                         {
                             // תרחיש: המילה כבר הופיעה בקטגוריה הזו בעבר (ה-Cache אומר לנו שיש קשר)
                             // אנחנו רק צריכים לעדכן את השכיחות ב-DB
-                            await _categoryWordRepo.IncrementFrequency(wordText,mycategoryId);
+                            await _categoryWordRepo.IncrementFrequency(wordText, mycategoryId);
                         }
                         else
                         {
@@ -77,33 +82,37 @@ namespace Service
                             };
                             await _categoryWordRepo.AddItem(newRelation);
                         }
-                        WordClassificationDTO.CategoryCounts[mycategoryId - 1]++;//זה עדכון של הדיקשנרי
 
+                        WordClassificationDTO.CategoryCounts[catIdx]++;//זה עדכון של הדיקשנרי
                     }
-                    else
+                }
+                else
+                {
+                    var newWord = new Word
                     {
-                        var newWord = new Word
-                        {
-                            Text = wordText
-                        };
-                        await _wordRepo.AddItem(newWord);
+                        Text = wordText
+                    };
+                    await _wordRepo.AddItem(newWord);
 
-                        var newRelation = new CategoryWord
-                        {
-                            WordId = newWord.WordId,     
-                            CategoryId = mycategoryId, 
-                            Frequency = 1       
-                        };
-                        await _categoryWordRepo.AddItem(newRelation);
-                        //זה אם המילה לא קיימת!!
-                        _naiveBayes.AddNewWordToDictinary(wordText, mycategoryId, newWord.WordId);
-
-                    }
-
+                    var newRelation = new CategoryWord
+                    {
+                        WordId = newWord.WordId,
+                        CategoryId = mycategoryId,
+                        Frequency = 1
+                    };
+                    await _categoryWordRepo.AddItem(newRelation);
+                    //זה אם המילה לא קיימת!!
+                    _naiveBayes.AddNewWordToDictinary(wordText, mycategoryId, newWord.WordId);
                 }
             }
         }
-  }
 
-        
-        
+    }
+}
+    
+
+
+
+
+
+

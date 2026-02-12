@@ -49,6 +49,19 @@ namespace Repository.Repositories
             return existing;
         }
 
+        //זו פונקציה שמנסה לעדכן ת הבקשה לסטטוס בטיפול ואת העובד שרוצה אותה 
+        public async Task<bool> TryAssignRequestAsync(int requestId, int employeeId)
+        {
+            var rowsAffected = await ctx.Requests
+                .Where(r => r.RequestId == requestId && r.Status == RequestStatus.New)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.Status, RequestStatus.InProgress)
+                    .SetProperty(r => r.EmployeeId, employeeId));
+
+            return rowsAffected > 0;
+        }
+
+
         public async Task DeleteItem(int id)
         {
             var existing = await ctx.Requests.FindAsync(id);

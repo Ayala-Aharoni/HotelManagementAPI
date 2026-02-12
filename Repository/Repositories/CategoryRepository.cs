@@ -14,6 +14,7 @@ namespace Repository.Repositories
         private readonly Icontext ctx;
         public CategoryRepository(Icontext context)
         {
+
             ctx = context;
         }
 

@@ -20,6 +20,8 @@ namespace Repository.Exception
         {
             public AuthException(string message = "אימייל או סיסמה שגוייםםםםםם!")
                 : base(message, HttpStatusCode.Unauthorized) { }
+
+
         }
 
     }
