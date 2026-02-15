@@ -13,7 +13,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Service
 {
-    public class Algorithmics
+    public class Algorithmics:IAlgorithmcs
     {
         private readonly ITextAnalyzer _textAnalyzer;
         private readonly INaiveBase _naiveBayes;
@@ -29,14 +29,19 @@ namespace Service
             _categoryWordRepo = categoryWordRepo;
 
         }
-        public List<string> AnalisisRequest()
+        public List<string> AnalisisRequest(string content)
         {
             List<string> SplitToSentencesLst = new List<string>();
-            SplitToSentencesLst = _textAnalyzer.SplitToSentences("בינתים"/* עדין לה הבנתי מה אני אמורה לשלוח מי מפעיל את זה*/);
+            SplitToSentencesLst = _textAnalyzer.SplitToSentences(content);
             SplitToSentencesLst.RemoveAll(x => x.Length < 2);
             List<string> relevantWords = new List<string>();
+            
             if (SplitToSentencesLst.Count() == 0) // In a case that fails to access the Hebrew NLP library
                 return null;
+
+            Console.WriteLine("SplitToSentencesLst:");
+            foreach (var s in SplitToSentencesLst)
+                Console.WriteLine($"- {s}");
 
             foreach (string sentences in SplitToSentencesLst)
             {

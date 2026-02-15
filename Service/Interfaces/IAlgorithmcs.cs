@@ -8,13 +8,15 @@ namespace Service.Interfaces
 {
     public interface IAlgorithmcs
     {
-        void GetRequest(string description);
+        //  void GetRequest(string description);
 
 
         //זה כבר עשיתי!
         //מחזיר רשימת מילים רלוונטיות מתוך התיאור של הבקשה!
-        List<string> AnalisisRequest();
-
-
+        List<string> AnalisisRequest(string content);
     }
+        
+
+
+        
 }

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Repository.Repositories
 {
-    public class RequestRepository : IRepository<Request>
+    public class RequestRepository : IRequestRepository
     {
         private readonly Icontext ctx;
         public RequestRepository(Icontext context)

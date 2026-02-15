@@ -15,6 +15,5 @@ namespace Service.Interfaces
         bool IsRelevantPartOfSpeech(MorphInfo morphInfo);
 
 
-
     }
 }

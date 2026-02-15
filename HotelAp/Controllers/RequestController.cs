@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Repository.Entities;
 using Repository.Interfaces;
 using System.Security.Claims;
+using Service.Interfaces;
+using System.Threading.Tasks;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -14,36 +16,41 @@ namespace HotelAp.Controllers
     [ApiController]
     public class RequestController : ControllerBase
     {
-        private readonly IRepository<Request> _repository;
         private readonly IRequestService _requestService;
 
         
-        public RequestController(IRepository<Request> repository, IRequestService requestService)
+        public RequestController(IRequestService requestService)
         {
-            this._repository = repository;
+            
             this._requestService = requestService;
         }
 
 
         // GET: api/<RequestController>
         [HttpGet]
-        public async Task<IEnumerable<Request>> Get()
+        public async Task<IEnumerable<Request>> GetAll()
         {
-            return await _repository.GetAll();
+            return await _requestService.GetAll();
         }
 
         // GET api/<RequestController>/5
         [HttpGet("{id}")]
         public async Task<Request> Get(int id)
         {
-            return await _repository.GetById(id);
+            return await _requestService.GetById(id);
         }
 
         // POST api/<RequestController>
         [HttpPost]
-        public void Post([FromBody] RequestDTO Req)
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody] RequestDTO Req)
         {
-          _requestService.CreateRequest(Req);    
+            if (Req == null || string.IsNullOrWhiteSpace(Req.Description))
+                return BadRequest("Description is required!");
+
+            var relevant = await _requestService.CreateRequest(Req);
+
+            return Ok(relevant); // מחזיר JSON אוטומטית
         }
 
         // PUT api/<RequestController>/5

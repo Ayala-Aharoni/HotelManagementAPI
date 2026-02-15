@@ -14,23 +14,38 @@ using System.Threading.Tasks;
 
 namespace Service
 {
-    public  static class ServiceDI
+    public static class ServiceDI
     {
         public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddScoped<IEmployeeService<AuthResponseDTO>, EmployeeService>();
-            services.AddScoped<CategoryService>();
-            services.AddScoped<WordService>();
-            services.AddScoped<RequestService>();
+            // שירותים כלליים / Repositories
             services.AddScoped<IRepository<Request>, RequestRepository>();
             services.AddScoped<IRepository<Word>, WordRepository>();
             services.AddScoped<IRepository<Category>, CategoryRepository>();
             services.AddScoped<ICategoryWordRepository, CategoryWordRepository>();
 
-            //זה למחלקת ניתוח המילים
-            var password = configuration["TextAnalyzerSettings:Password"];
+            // שירותי Business
+            services.AddScoped<IRequestService, RequestService>();
+            services.AddScoped<IAlgorithmcs, Algorithmics>(); // תלוי בארבעה השירותים למטה
+            services.AddScoped<INaiveBase, NaiveBase>();
+
+            // TextAnalyzer עם Factory שמושך סיסמה מה־appsettings
             services.AddScoped<ITextAnalyzer>(provider =>
-                new TextAnalyzer("myPassword"));
+            {
+                var config = provider.GetRequiredService<IConfiguration>();
+                var password = config["TextAnalyzerSettings:Password"];
+
+                if (string.IsNullOrWhiteSpace(password))
+                    throw new Exception("TextAnalyzer password is missing in configuration!");
+
+                return new TextAnalyzer(password);
+            });
+
+            // שירותים נוספים אם יש לך
+            services.AddScoped<IEmployeeService<AuthResponseDTO>, EmployeeService>();
+            services.AddScoped<CategoryService>();
+            services.AddScoped<WordService>();
+
             return services;
         }
     }
