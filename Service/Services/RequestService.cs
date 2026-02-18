@@ -19,12 +19,14 @@ namespace Service.Services
         private readonly IRequestRepository requestRepository;
         private readonly IAlgorithmcs _algorithmics;
         private readonly Icontext ctx;
-        public RequestService(IRequestRepository requestRepository, Icontext ctx,IAlgorithmcs algorithmcs)
+        private readonly INaiveBase _naiveBase; //עשיתי זאת רק לבדיקה!!!!!!!!!!!!!!!!!!!!! למחוק אחרי שווידאתי שזה עובד!!
+        public RequestService(IRequestRepository requestRepository, Icontext ctx,IAlgorithmcs algorithmcs, INaiveBase naiveBase)
         {
-           this.requestRepository = requestRepository;
+            this.requestRepository = requestRepository;
             this.ctx = ctx;
             this._algorithmics = algorithmcs;
-         }
+            _naiveBase = naiveBase;
+        }
         public async Task<IEnumerable<Request>> GetAll()
         {
 
@@ -57,13 +59,23 @@ namespace Service.Services
         //פפה אני מזמנת את כל האלגוריתמים או לא?? לשאול ??
         //כאילו מבחינתי זה אמור ליצור BEW REQUEST עם קטגוריה שתחזור לי מכל הפונקציות שאזמו
         //createRequest
-        public Task<List<string>> CreateRequest(RequestDTO Request)
+        public async Task CreateRequest(RequestDTO Request)
         {
-            //TODOOOOOOOOOOOOO
-            var result = _algorithmics.AnalisisRequest(Request.Description);
-            return Task.FromResult(result); // מחזיר ל-Controller
-        }
+            var result = await _algorithmics.AnalisisRequest(Request.Description);
+            Console.WriteLine($"Sending to Predict: {result.Count} words.");
+            await _naiveBase.LoadModel();//למחוקקקק את זה מכאן אחר כךךךך זה לא אמור להיות כל בקשה רק וידאי שהכל עובד פה!!!!!!!!!!
+            var category = await _algorithmics.ClassifyText(result);
 
+            Console.WriteLine("********************************");
+            Console.WriteLine($"THE PREDICTED CATEGORY ID IS: {category}");
+            Console.WriteLine("********************************");
+            //TODOOOOOOOOOOOOOO
+            //כאן עלי ליצור בקשה חדשה באמת עם הקטגוריה המתאימה שהאלגוריתם החזיר לי ולשמור אותה בבסיס הנתונים    
+            //כאן גם אמור להיות הלוגיקה של ה-SignalR שידווח ל-Frontend שיש בקשה חדשה (ככה שהעובדים יוכלו לראות את זה בזמן אמת)!!!!!!!!!!
+            // צריך להיות גם טיפול בשגיאות 
+            //
+
+        }
         // הוסיפי את ה-ID כפרמטר לפונקציה (הוא יגיע מה-Controller)
         public async Task<bool> TakeRequest(int requestId, int employeeId)
         {

@@ -14,7 +14,7 @@ namespace Service
     {
         private readonly string _password;
 
-        public TextAnalyzer(string password)//מתי שולחים את הסיסמא????
+        public TextAnalyzer(string password)
         {
             _password = password;
             HebrewNLP.HebrewNLP.Password = _password;

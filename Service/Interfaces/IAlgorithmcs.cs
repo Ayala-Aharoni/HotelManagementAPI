@@ -13,10 +13,13 @@ namespace Service.Interfaces
 
         //זה כבר עשיתי!
         //מחזיר רשימת מילים רלוונטיות מתוך התיאור של הבקשה!
-        List<string> AnalisisRequest(string content);
+        Task<List<string>> AnalisisRequest(string content);
+
+        Task<int> ClassifyText(List<string> analysisWords);
+
     }
-        
 
 
-        
+
+
 }

@@ -142,7 +142,23 @@ namespace Service
 
             foreach (var word in words)
             {
+                Console.WriteLine($"--- Analyzing word: '{word}' ---");//עשיתי רק לבדיקה נא למחוק אחר כך!!!!!!!!!!!!!!!
+              
+
                 int[] countsForWord = null;
+
+                if (WordStatistics.TryGetValue(word, out WordClassificationDTO stats))
+                {
+                    // עכשיו זה יעבוד! השתמשנו ב-stats במקום בשם של המחלקה
+                    Console.WriteLine($"Word '{word}' FOUND in Dictionary! Counts: {string.Join(", ", stats.CategoryCounts)}");
+                    countsForWord = stats.CategoryCounts;
+                }
+                else
+                {
+                    Console.WriteLine($"Word '{word}' NOT FOUND in Dictionary.");
+                }
+
+                //עד כאן למחוקק אחכ כךךךךךך זה לבדיקהה
 
 
                 if (WordStatistics.TryGetValue(word, out WordClassificationDTO WordClassificationDTO))
@@ -169,6 +185,7 @@ namespace Service
             int bestCategoryIndex = 0;
             for (int i = 1; i < finalScores.Length; i++)
             {
+                Console.WriteLine($"Category Index {i} Score: {finalScores[i]}");//גם זה למחוק זה רק לבדיקה!!!!!
                 if (finalScores[i] > finalScores[bestCategoryIndex])
                     bestCategoryIndex = i;
             }

@@ -48,9 +48,9 @@ namespace HotelAp.Controllers
             if (Req == null || string.IsNullOrWhiteSpace(Req.Description))
                 return BadRequest("Description is required!");
 
-            var relevant = await _requestService.CreateRequest(Req);
+             await _requestService.CreateRequest(Req);
 
-            return Ok(relevant); // מחזיר JSON אוטומטית
+            return Ok(); // מחזיר JSON אוטומטית
         }
 
         // PUT api/<RequestController>/5

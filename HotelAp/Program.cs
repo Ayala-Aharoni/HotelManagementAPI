@@ -98,6 +98,13 @@ builder.Services.AddServices(builder.Configuration);
 ////////////////////////////////////////
 ///////////////////////////////////////
 
+
+
+
+// רישום השירות שלך והגדרת ה-HttpClient שלו
+builder.Services.AddHttpClient<TextAnalysisService>();//זה בשביל לתקשר עם פיתון
+builder.Services.AddScoped<TextAnalysisService>();
+
 var app = builder.Build();
 app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
 app.UseSwagger();

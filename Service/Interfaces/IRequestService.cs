@@ -17,7 +17,7 @@ namespace Repository.Interfaces
          Task<Request> GetById(int id);
          Task Delete(int id);
 
-        Task<List<string>> CreateRequest (RequestDTO request);    
+        Task CreateRequest (RequestDTO request);    
         Task<bool> TakeRequest(int requestId, int employeeId);
 
         Task CompleteRequest(int requestId, int employeeId);
