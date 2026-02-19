@@ -19,6 +19,7 @@ namespace Service
         private readonly IRepository<Request> _Requestrepo;
         private readonly IRepository<Word> _wordRepo;
         private readonly ICategoryWordRepository _categoryWordRepo;
+        private readonly ISimiliarWord _similarWordsService;    
 
         public Dictionary<string, WordClassificationDTO> WordStatistics { get; private set; } = new Dictionary<string, WordClassificationDTO>();
         private int[] _totalWordsPerCategory;
@@ -34,12 +35,13 @@ namespace Service
 
 
 
-        public NaiveBase(IRepository<Category> repositoryy, IRepository<Request> reqrepository, IRepository<Word> wordRepo, ICategoryWordRepository categoryWordRepo)
+        public NaiveBase(IRepository<Category> repositoryy, IRepository<Request> reqrepository, IRepository<Word> wordRepo, ICategoryWordRepository categoryWordRepo ,ISimiliarWord similiarWord)
         {
             _Categoryrepo = repositoryy;
             _Requestrepo = reqrepository;
             _wordRepo = wordRepo;
             _categoryWordRepo = categoryWordRepo;
+            _similarWordsService = similiarWord;
         }
 
          public async Task LoadDictionaryAsync(List<Category> categories)
@@ -167,8 +169,33 @@ namespace Service
                 }
                 else
                 {
-                    // אם לא נמצא - משתמשים בלוגיקה של משי למציאת מילים דומות
-                 //   countsForWord = await GetAverageCountsForSimilarWords(word);
+                    //כל זה בשביל בדיקהההההה למחוק אחר כך להסיר תירוק שלמטה!!!!!!
+
+                    Console.WriteLine($"--- המילה '{word}' לא קיימת ב-DB. מפעיל WordNet... ---");
+
+                    // קריאה לשירות
+                    var synonyms = await _similarWordsService.GetSimilarWordsAsync(word);
+
+                    if (synonyms != null && synonyms.Any())
+                    {
+                        Console.WriteLine($"--- נמצאו {synonyms.Count} מילים נרדפות: {string.Join(", ", synonyms)} ---");
+
+                        // שליחה לחישוב הממוצע
+                        countsForWord = GetAverageCountsForSimilarWords(synonyms);
+
+                        if (countsForWord != null)
+                            Console.WriteLine($"--- הצלחנו לחשב ממוצע סטטיסטי מבוסס מילים נרדפות! ---");
+                        else
+                            Console.WriteLine($"--- למרות המילים הנרדפות, לא נמצא מידע סטטיסטי ב-DB. ---");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"--- WordNet לא מצא מילים נרדפות למילה '{word}'. ---");
+                    }
+                    //List<string> similarWords = await _similarWordsService.GetSimilarWordsAsync(word);
+
+                    //// 2. שולחים את הרשימה לפונקציה של הממוצע בתוך הנאיב-בייס
+                    //countsForWord = GetAverageCountsForSimilarWords(similarWords);
                 }
 
 
@@ -193,48 +220,44 @@ namespace Service
             return _categoryIdToIndex.FirstOrDefault(x => x.Value == bestCategoryIndex).Key;
         }
 
+        public int[] GetAverageCountsForSimilarWords(List<string> similarWords)
+        {
+            // 1. בדיקה אם הרשימה ריקה או לא קיימת
+            if (similarWords == null || !similarWords.Any())
+            {
+                return null;
+            }
 
-        //private async Task<int[]> GetAverageCountsForSimilarWords(string word)
-        //{
-        //    // 1. קוראים לפונקציה של משי/האלגוריתם שמוצא רשימת מילים דומות (Strings)
-        //    // הערה: את צריכה לוודא שיש לך פונקציה כזו שמחזירה List<string>
-        //    List<string> similarWords = await FindSimilarWords(word);
+            // 2. הכנת המערך הצובר (לפי כמות הקטגוריות שלך)
+            int[] sumCounts = new int[_numCategories];
+            int matchCount = 0;
 
-        //    if (similarWords == null || !similarWords.Any())
-        //        return null;
+            // 3. ריצה על רשימת המילים שקיבלנו כפרמטר
+            foreach (var simWord in similarWords)
+            {
+                // בדיקה אם המילה הדומה קיימת במילון הסטטיסטיקות (זה שבזכרון ה-C#)
+                if (WordStatistics.TryGetValue(simWord, out var stats))
+                {
+                    for (int i = 0; i < _numCategories; i++)
+                    {
+                        sumCounts[i] += stats.CategoryCounts[i];
+                    }
+                    matchCount++;
+                }
+            }
 
-        //    // 2. מכינים מערך צובר בגודל כמות הקטגוריות
-        //    int[] sumCounts = new int[_numCategories];
-        //    int matchCount = 0;
+            // 4. חישוב ממוצע (רק אם מצאנו לפחות מילה אחת ב-DB)
+            if (matchCount > 0)
+            {
+                for (int i = 0; i < _numCategories; i++)
+                {
+                    sumCounts[i] /= matchCount;
+                }
+                return sumCounts;
+            }
 
-        //    // 3. רצים על כל המילים הדומות שמצאנו
-        //    foreach (var simWord in similarWords)
-        //    {
-        //        // בודקים אם המילה הדומה קיימת במילון הסטטיסטיקות שלנו
-        //        if (WordStatistics.TryGetValue(simWord, out var stats))
-        //        {
-        //            for (int i = 0; i < _numCategories; i++)
-        //            {
-        //                sumCounts[i] += stats.CategoryCounts[i];
-        //            }
-        //            matchCount++;
-        //        }
-        //    }
-
-        //    // 4. אם מצאנו לפחות מילה אחת דומה שיש עליה מידע - מחשבים ממוצע
-        //    if (matchCount > 0)
-        //    {
-        //        for (int i = 0; i < _numCategories; i++)
-        //        {
-        //            sumCounts[i] /= matchCount; // מחלקים בכמות המילים שמצאנו כדי לקבל ממוצע
-        //        }
-        //        return sumCounts;
-        //    }
-        //    return null;
-        //}
-
-
-
+            return null;
+        }
 
 
 

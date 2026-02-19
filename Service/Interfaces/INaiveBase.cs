@@ -14,6 +14,9 @@ namespace Service.Interfaces
         Task LoadDictionaryAsync(List<Category> categories);
          Task<int> PredictCategory(List<string> words);
 
+        int[] GetAverageCountsForSimilarWords(List<string> similarWords);
+
+
         void AddNewWordToDictinary(string wordText, int categoryId, int wordId);
         int GetIndex(int categoryId);   
         Dictionary<string, WordClassificationDTO> WordStatistics { get; }

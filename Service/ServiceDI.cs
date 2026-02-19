@@ -46,6 +46,12 @@ namespace Service
             services.AddScoped<CategoryService>();
             services.AddScoped<WordService>();
 
+            services.AddHttpClient<SimiliarWordsService>();
+
+            services.AddScoped<ISimiliarWord, SimiliarWordsService>();
+
+
+
             return services;
         }
     }
