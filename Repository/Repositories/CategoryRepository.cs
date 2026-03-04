@@ -12,12 +12,13 @@ namespace Repository.Repositories
     public class CategoryRepository : IRepository<Category>
     {
         private readonly Icontext ctx;
+
         public CategoryRepository(Icontext context)
         {
-
             ctx = context;
         }
 
+        // מחזיר List כפי שמוגדר בממשק שלך
         public async Task<List<Category>> GetAll()
         {
             return await ctx.Categories.ToListAsync();
@@ -40,6 +41,7 @@ namespace Repository.Repositories
             var existing = await ctx.Categories.FindAsync(id);
             if (existing == null) return null;
 
+            // עדכון השדות
             existing.CategoryName = item.CategoryName;
 
             await ctx.Save();
@@ -57,3 +59,4 @@ namespace Repository.Repositories
         }
     }
 }
+    

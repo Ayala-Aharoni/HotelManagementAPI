@@ -50,7 +50,7 @@ namespace HotelAp.Controllers
 
              await _requestService.CreateRequest(Req);
 
-            return Ok(); // מחזיר JSON אוטומטית
+            return Ok(new { Message = "הבקשה נוצרה בהצלחה" }); // מחזיר JSON אוטומטית
         }
 
         // PUT api/<RequestController>/5

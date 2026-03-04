@@ -1,4 +1,5 @@
-﻿using BCrypt.Net;
+﻿using AutoMapper;
+using BCrypt.Net;
 using Common.DTO;
 using DataContext.DTO;
 using Microsoft.EntityFrameworkCore;
@@ -19,22 +20,25 @@ using System.Threading.Tasks;
 
 namespace Service.Services
 {
-    public class EmployeeService: IEmployeeService<AuthResponseDTO>
+    public class EmployeeService: IEmployeeService
     {
         private readonly IEmployeeRepository _employeeRepository;
         private readonly IRepository<Category> _categoryRepository;
+        private readonly IMapper _mapper;     
         private readonly IConfiguration _configuration;
 
 
-        public EmployeeService(IEmployeeRepository employeeRepository, IRepository<Category> categoryRepository, IConfiguration configuration)
+
+        public EmployeeService(IEmployeeRepository employeeRepository, IRepository<Category> categoryRepository, IConfiguration configuration ,IMapper mapper)
         {
             _employeeRepository = employeeRepository;
             _categoryRepository = categoryRepository;
             _configuration = configuration;
+            _mapper = mapper;
         }
 
         //עשיתי כאן ללא ההרשאות שרק מנהל יכול לעשות זאת 
-        public async Task<AuthResponseDTO> Register(RegisterEmployeeDTO R)
+        public async Task<string> Register(RegisterEmployeeDTO R)
         {
             var existingEmployee = await _employeeRepository.GetByEmailAsync(R.Email);
 
@@ -50,31 +54,21 @@ namespace Service.Services
 
             if (category == null)
                 throw new Exception("קטגוריה לא נמצאה");
+            var employee = _mapper.Map<Employee>(R);
 
-            var employee = new Employee
-            {
-                Fullname =R.Fullname,
-                Email = R.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(R.PassWord),
-                Role = R.Role.ToString(),
-                CategoryId = category.CategoryId
-            };
+            // עדיין צריך לטפל ידנית בדברים שלא קיימים ב-DTO או דורשים לוגיקה מיוחדת
+            employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(R.PassWord);
+            employee.CategoryId = category.CategoryId;
+
             await _employeeRepository.AddItem(employee);
-           
-            var token = GenerateToken(employee); //האם אני צריכה כאן גם ליצור טוקן??
 
-            // החזרת DTO
-            return new AuthResponseDTO
-            {
-                Token = token,
-                Name = employee.Fullname,
-                Email = employee.Email,
-                Role = employee.Role
-            };
+            // יצירת טוקן כדי שהמשתמש יהיה מחובר מיד
+            var token = GenerateToken(employee);
 
+            return token;
         }
         //עשיתי גאן עם זרואו זרקתי כאילו אקסשים האם ככה?
-        public async Task<AuthResponseDTO> Login(LoginEmployeeDTO l)
+        public async Task<string> Login(LoginEmployeeDTO l)
         {
 
             var employee = await _employeeRepository.GetByEmailAsync(l.Email);
@@ -86,15 +80,45 @@ namespace Service.Services
 
             var token = GenerateToken(employee);
 
-            // החזרת DTO
-            return new AuthResponseDTO
-            {
-                Token = token,
-                Name = employee.Fullname,
-                Email = employee.Email,
-                Role = employee.Role
-            };
+           return token;
 
+
+        }
+
+
+        public async Task<IEnumerable<Employee>> GetAllEmployeesAsync()
+        {
+            return await _employeeRepository.GetAll();
+        }
+
+        public async Task<Employee> GetByIdAsync(int id)
+        {
+            var employee = await _employeeRepository.GetById(id);
+
+            if (employee == null)
+                throw new EntityNotFoundException("עובד", id);
+
+            return employee;
+        }
+
+        public async Task UpdateEmployeeAsync(int id, Employee emp)
+        {
+            var existing = await _employeeRepository.GetById(id);
+            if (existing == null)
+                throw new EntityNotFoundException("עובד", id);
+
+            //TODOO
+            await _employeeRepository.UpdateItem(id, emp);
+        }
+
+        public async Task DeleteEmployeeAsync(int id)
+        {
+            // בדיקה שהעובד קיים לפני מחיקה
+            var existing = await _employeeRepository.GetById(id);
+            if (existing == null)
+                throw new EntityNotFoundException("עובד", id);
+
+            await _employeeRepository.DeleteItem(id);
         }
 
         private string GenerateToken(Employee e)

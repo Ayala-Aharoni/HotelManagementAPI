@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Repository.Entities;
 using Repository.Interfaces;
+using Service.Interfaces;
 using Service.Services;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -12,35 +13,35 @@ namespace HotelAp.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
-        private readonly IRepository<Category> repository;
-        private readonly CategoryService _categoryService;
-        public CategoryController(IRepository<Category> repo, CategoryService categoryService)
+        private readonly ICategoryService _categoryService;
+
+        public CategoryController(ICategoryService categoryService)
         {
-            repository = repo;
             _categoryService = categoryService;
-        }   
+        }
 
-        // GET: api/<CategoryController>
         [HttpGet]
-        // [Authorize(Roles = "Admin")]//  פה רק מנהל יוכל למחוק עובד עשיתי בינתים ירוק נא לשנותת!!!!!!! 
-
         public async Task<IEnumerable<Category>> Get()
         {
-            return await repository.GetAll();
+            // שימי לב: השם חייב להיות זהה למה שיש ב-ICategoryService
+            return await _categoryService.GetAllAsync();
         }
 
-        // GET api/<CategoryController>/5
         [HttpGet("{id}")]
-        public async Task<Category> Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
-            return await repository.GetById(id);
+            try
+            {
+                var category = await _categoryService.GetByIdAsync(id);
+                return Ok(category);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
-
-        // POST api/<CategoryController>
-        
-        [HttpPost]
-        [HttpPost("AddCategory")]
+        [HttpPost("AddCategory")] // עדיף להשאיר רק נתיב אחד כדי למנוע בלבול
         public async Task<IActionResult> AddCategory([FromBody] CategoryDTO dto)
         {
             try
@@ -54,18 +55,19 @@ namespace HotelAp.Controllers
             }
         }
 
-
-        // PUT api/<CategoryController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<CategoryController>/5
         [HttpDelete("{id}")]
-        public async void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            repository.DeleteItem(id);  
+            try
+            {
+                // כאן השם השתנה ל-DeleteCategoryAsync
+                await _categoryService.DeleteCategoryAsync(id);
+                return NoContent(); // מחזיר 204 (הצליח ואין תוכן להחזיר)
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

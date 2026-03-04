@@ -14,6 +14,9 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Service.Interfaces;
+using Service.Services;
+using Service.Mappings; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -88,6 +91,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 ///בכל בקשה יוצר מופע-עבור גולש
 //כל פעם שמשהו מבקש מופע של איקונטס וזה קורה לי הרי בתוך הרפוסיטורי אני ישלח לו את הדטהביס - הוטל!!
 builder.Services.AddScoped<Icontext,HotelDbContext>();
+// רישום הממשק הגנרי והמימוש שלו
+
+
+
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+
 
 // Repositories
 builder.Services.AddRepositories();
@@ -95,6 +104,9 @@ builder.Services.AddRepositories();
 // Services
 builder.Services.AddServices(builder.Configuration);
 
+
+//MAPPEER
+builder.Services.AddAutoMapper(typeof(CategoryProfile));
 ////////////////////////////////////////
 ///////////////////////////////////////
 
@@ -106,7 +118,7 @@ builder.Services.AddHttpClient<TextAnalysisService>();//זה בשביל לתקשר עם פיתון
 builder.Services.AddScoped<TextAnalysisService>();
 
 var app = builder.Build();
-app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
+//app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

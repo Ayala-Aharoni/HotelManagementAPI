@@ -42,7 +42,7 @@ namespace Service
             });
 
             // שירותים נוספים אם יש לך
-            services.AddScoped<IEmployeeService<AuthResponseDTO>, EmployeeService>();
+            services.AddScoped<IEmployeeService, EmployeeService>();
             services.AddScoped<CategoryService>();
             services.AddScoped<WordService>();
 

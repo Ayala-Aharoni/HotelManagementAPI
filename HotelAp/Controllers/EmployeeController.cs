@@ -15,48 +15,40 @@ namespace HotelAp.Controllers
     [ApiController]
     public class EmployeeController : ControllerBase
     {
-        private readonly IRepository<Employee> repository;
-        private readonly IEmployeeService<AuthResponseDTO> employeeService;
+        private readonly IEmployeeService _employeeService;
 
-        public EmployeeController(IRepository<Employee> repo, IEmployeeService<AuthResponseDTO> employeeService)
+        public EmployeeController(IEmployeeService employeeService)
         {
-            repository = repo;
-            this.employeeService = employeeService;
+            _employeeService = employeeService;
         }
-        // GET: api/<EmployeeController>
+
         [HttpGet]
-        public async Task<IEnumerable<Employee>> Get()
+        //[Authorize(Roles = "Admin")]
+
+        public async Task<IActionResult> Get()
         {
-            return await repository.GetAll();
+            // כאן כדאי להוסיף מתודה בסרביס GetAllEmployees
+            var employees = await _employeeService.GetAllEmployeesAsync();
+            return Ok(employees);
         }
 
-
-        // GET api/<EmployeeController>/5
-
-        // [Authorize(Roles = "Admin")]//  פה רק מנהל יוכל למחוק עובד עשיתי בינתים ירוק נא לשנותת!!!!!!! 
         [HttpGet("{id}")]
-        public async Task<Employee> Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
-            return await repository.GetById(id);
-        }
-
-        [Authorize(Roles = "Admin")]
-        // POST api/<EmployeeController>
-        [HttpPost("Register")]
-        public async Task<IActionResult> Register([FromBody] RegisterEmployeeDTO dto)
-        {
-            var employee = await employeeService.Register(dto);
+            var employee = await _employeeService.GetByIdAsync(id);
+            if (employee == null) return NotFound();
             return Ok(employee);
         }
 
-        // POST api/<EmployeeController>/login
-        [HttpPost("Login")]
-        public async Task<IActionResult> Login([FromBody] LoginEmployeeDTO dto)
+       // [Authorize(Roles = "Admin")]
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody] RegisterEmployeeDTO dto)
         {
             try
             {
-                var employee = await employeeService.Login(dto);
-                return Ok(employee); 
+                var token = await _employeeService.Register(dto);
+                // אנחנו מחזירים אובייקט עם שדה טוקן כדי שהפרונט יבין בקלות
+                return Ok(new { token });
             }
             catch (Exception ex)
             {
@@ -64,21 +56,33 @@ namespace HotelAp.Controllers
             }
         }
 
-        // [Authorize(Roles = "Admin")]//  פה רק מנהל יוכל למחוק עובד עשיתי בינתים ירוק נא לשנותת!!!!!!! 
-        // PUT api/<EmployeeController>/5
-        [HttpPut("{id}")]
-        public async void Put(int id, [FromBody] Employee Emp)
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginEmployeeDTO dto)
         {
-            repository.UpdateItem(id,Emp);
-
+            try
+            {
+                var token = await _employeeService.Login(dto);
+                return Ok(new { token });
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
         }
 
-       // [Authorize(Roles = "Admin")]//  פה רק מנהל יוכל למחוק עובד עשיתי בינתים ירוק נא לשנותת!!!!!!! 
-        // DELETE api/<EmployeeController>/5
-        [HttpDelete("{id}")]
-        public async void Delete(int id)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, [FromBody] Employee emp)
         {
-            repository.DeleteItem(id);
+            await _employeeService.UpdateEmployeeAsync(id, emp);
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _employeeService.DeleteEmployeeAsync(id);
+            return NoContent();
         }
     }
-}
+}   
