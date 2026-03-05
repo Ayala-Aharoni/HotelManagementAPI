@@ -131,7 +131,8 @@ namespace Service.Services
         new Claim(ClaimTypes.NameIdentifier, e.EmployeeId.ToString()),
         new Claim(ClaimTypes.Name, e.Fullname),
         new Claim(ClaimTypes.Email, e.Email),
-        new Claim(ClaimTypes.Role, e.Role)
+        new Claim(ClaimTypes.Role, e.Role),
+        new Claim("CategoryId", e.CategoryId.ToString())
     };
 
             var token = new JwtSecurityToken(

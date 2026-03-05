@@ -1,10 +1,12 @@
 ﻿using Common.DTO;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.SignalR; 
 using Microsoft.EntityFrameworkCore;
 using Repository.Entities;
 using Repository.Exception;
 using Repository.Interfaces;
 using Repository.Repositories;
+using Service.Hubs; 
 using Service.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -12,6 +14,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
+
 namespace Service.Services
 {
     public  class RequestService :IRequestService
@@ -20,12 +24,17 @@ namespace Service.Services
         private readonly IAlgorithmcs _algorithmics;
         private readonly Icontext ctx;
         private readonly INaiveBase _naiveBase; //עשיתי זאת רק לבדיקה!!!!!!!!!!!!!!!!!!!!! למחוק אחרי שווידאתי שזה עובד!!
-        public RequestService(IRequestRepository requestRepository, Icontext ctx,IAlgorithmcs algorithmcs, INaiveBase naiveBase)
+        private readonly IHubContext<RequestHub> _hubContext;
+        private readonly IMapper _mapper;
+
+        public RequestService(IRequestRepository requestRepository, Icontext ctx,IAlgorithmcs algorithmcs, INaiveBase naiveBase , IHubContext<RequestHub> hubContext , IMapper mapper)
         {
             this.requestRepository = requestRepository;
             this.ctx = ctx;
             this._algorithmics = algorithmcs;
             _naiveBase = naiveBase;
+            _hubContext = hubContext;   
+            _mapper = mapper;   
         }
         public async Task<IEnumerable<Request>> GetAll()
         {
@@ -59,9 +68,9 @@ namespace Service.Services
         //פפה אני מזמנת את כל האלגוריתמים או לא?? לשאול ??
         //כאילו מבחינתי זה אמור ליצור BEW REQUEST עם קטגוריה שתחזור לי מכל הפונקציות שאזמו
         //createRequest
-        public async Task CreateRequest(RequestDTO Request)
+        public async Task CreateRequest(RequestDTO RequestDTO)
         {
-            var result = await _algorithmics.AnalisisRequest(Request.Description);
+            var result = await _algorithmics.AnalisisRequest(RequestDTO.Description);
             Console.WriteLine($"Sending to Predict: {result.Count} words.");
             await _naiveBase.LoadModel();//למחוקקקק את זה מכאן אחר כךךךך זה לא אמור להיות כל בקשה רק וידאי שהכל עובד פה!!!!!!!!!!
             var category = await _algorithmics.ClassifyText(result);
@@ -69,6 +78,27 @@ namespace Service.Services
             Console.WriteLine("********************************");
             Console.WriteLine($"THE PREDICTED CATEGORY ID IS: {category}");
             Console.WriteLine("********************************");
+
+
+            Request newRequest = _mapper.Map<Request>(RequestDTO);
+            newRequest.CategoryId = category;
+            newRequest.Status = RequestStatus.New; // סטטוס התחלתי
+
+            // 3. שמירה בבסיס הנתונים
+            await requestRepository.AddItem(newRequest); 
+
+            // 4. מפר: הפיכת הישות (Request) ל-NotificationDTO (ההודעה לעובד)
+            // עכשיו ל-newRequest יש כבר מזהה (ID) מה-DB
+            var notification = _mapper.Map<NotificationDTO>(newRequest);
+
+            // 5. הקסם של SignalR: שליחת ההודעה בזמן אמת
+            // אנחנו שולחים את זה לקבוצה שהשם שלה הוא ה-ID של הקטגוריה
+            await _hubContext.Clients.Group(category.ToString())
+                .SendAsync("ReceiveNotification", notification);
+
+            Console.WriteLine($"Notification sent to group {category}");
+
+
             //TODOOOOOOOOOOOOOO
             //כאן עלי ליצור בקשה חדשה באמת עם הקטגוריה המתאימה שהאלגוריתם החזיר לי ולשמור אותה בבסיס הנתונים    
             //כאן גם אמור להיות הלוגיקה של ה-SignalR שידווח ל-Frontend שיש בקשה חדשה (ככה שהעובדים יוכלו לראות את זה בזמן אמת)!!!!!!!!!!

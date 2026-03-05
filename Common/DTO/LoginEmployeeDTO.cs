@@ -9,8 +9,8 @@ namespace DataContext.DTO
 {
     public class LoginEmployeeDTO
     {
-        public string Fullname { get; set; }
-        public string Email { get; set; }  
-        public string Password { get; set; }
+        // הסרנו את Fullname כי הוא לא רלוונטי ללוגין
+        public string Email { get; set; }
+        public string Password { get; set; } // שימי לב: w קטנה
     }
 }

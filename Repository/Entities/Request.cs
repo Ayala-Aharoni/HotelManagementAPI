@@ -23,8 +23,7 @@ namespace Repository.Entities
         [ForeignKey("CategoryId")]
         public Category Category { get; set; }
         public RequestStatus Status { get; set; }
-        public int EmployeeId { get; set; }
-
+        public int? EmployeeId { get; set; }
         [ForeignKey("EmployeeId")]
         public Employee Employee { get; set; }    
         public DateTime CreatedAt { get; set; } = DateTime.Now;

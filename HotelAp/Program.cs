@@ -8,15 +8,16 @@ using Repository.Entities;
 using Repository.Interfaces;
 using Repository.Repositories;
 using Service;
+using Service.Interfaces;
+using Service.Mappings; 
+using Service.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Service.Interfaces;
-using Service.Services;
-using Service.Mappings; 
+using Service.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -117,6 +118,26 @@ builder.Services.AddAutoMapper(typeof(CategoryProfile));
 builder.Services.AddHttpClient<TextAnalysisService>();//זה בשביל לתקשר עם פיתון
 builder.Services.AddScoped<TextAnalysisService>();
 
+
+//זה השורה של ההאזנה לSINGLER בשביל שליחת הודעות לעובדים
+builder.Services.AddSignalR();
+
+
+//זה בשביל לאפשר ל-React לתקשר עם ה-API שלנו בלי בעיות של CORS, וקריטי בשביל שה-SignalR יעבוד גם כן!
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.WithOrigins("http://localhost:5176") // תוודאי שזה הפורט של הריאקט שלך!
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); // קריטי בשביל SignalR והטוקן
+    });
+});
+
+
+
+
 var app = builder.Build();
 //app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
 app.UseSwagger();
@@ -126,10 +147,16 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty; // פותח את ה-UI ישר ב-root
 });
 
+
+app.UseCors("AllowAll");
+
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+//זה בשביל שהסינגלר יתחבר לשרת ויוכל לקבל הודעות    
+app.MapHub<RequestHub>("/requestHub"); // זה הנתיב שהריאקט יתחבר אליו
 
 app.Run();
