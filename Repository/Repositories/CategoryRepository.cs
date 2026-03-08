@@ -24,7 +24,7 @@ namespace Repository.Repositories
             return await ctx.Categories.ToListAsync();
         }
 
-        public async Task<Category> GetById(int id)
+        public async Task<Category?> GetById(int id)
         {
             return await ctx.Categories.FindAsync(id);
         }

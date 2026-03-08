@@ -86,19 +86,22 @@ namespace Service.Services
         }
 
 
-        public async Task<IEnumerable<Employee>> GetAllEmployeesAsync()
+        public async Task<IEnumerable<EmployeeDto>> GetAllEmployeesAsync()
         {
-            return await _employeeRepository.GetAll();
+         
+            var employees = await _employeeRepository.GetAll();
+
+            return _mapper.Map<IEnumerable<EmployeeDto>>(employees);
         }
 
-        public async Task<Employee> GetByIdAsync(int id)
+        public async Task<EmployeeDto> GetByIdAsync(int id)
         {
             var employee = await _employeeRepository.GetById(id);
 
             if (employee == null)
                 throw new EntityNotFoundException("עובד", id);
 
-            return employee;
+            return _mapper.Map<EmployeeDto>(employee);
         }
 
         public async Task UpdateEmployeeAsync(int id, Employee emp)

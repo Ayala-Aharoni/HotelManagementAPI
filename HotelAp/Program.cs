@@ -36,7 +36,6 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "securityLessonWebApi", Version = "v1" });
@@ -81,19 +80,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 
 
-
-
-
-
-
-
 //מכאן כל מה שתוך ירוק ארוך זה שלי :)
 /////////////////////////////////////////
 ///בכל בקשה יוצר מופע-עבור גולש
 //כל פעם שמשהו מבקש מופע של איקונטס וזה קורה לי הרי בתוך הרפוסיטורי אני ישלח לו את הדטהביס - הוטל!!
 builder.Services.AddScoped<Icontext,HotelDbContext>();
 // רישום הממשק הגנרי והמימוש שלו
-
 
 
 builder.Services.AddScoped<ICategoryService, CategoryService>();
@@ -123,18 +115,17 @@ builder.Services.AddScoped<TextAnalysisService>();
 builder.Services.AddSignalR();
 
 
-//זה בשביל לאפשר ל-React לתקשר עם ה-API שלנו בלי בעיות של CORS, וקריטי בשביל שה-SignalR יעבוד גם כן!
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.WithOrigins("http://localhost:5176") // תוודאי שזה הפורט של הריאקט שלך!
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials(); // קריטי בשביל SignalR והטוקן
-    });
+    options.AddPolicy("MyAllowSpecificOrigins",
+        policy =>
+        {
+            policy.SetIsOriginAllowed(origin => new Uri(origin).Host == "localhost") // מאשר כל פורט על לוקלהוסט!
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
 });
-
 
 
 
@@ -148,8 +139,7 @@ app.UseSwaggerUI(c =>
 });
 
 
-app.UseCors("AllowAll");
-
+app.UseCors("MyAllowSpecificOrigins");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -160,3 +150,5 @@ app.MapControllers();
 app.MapHub<RequestHub>("/requestHub"); // זה הנתיב שהריאקט יתחבר אליו
 
 app.Run();
+ 
+

@@ -21,24 +21,18 @@ namespace HotelAp.Controllers
         }
 
         [HttpGet]
-        public async Task<IEnumerable<Category>> Get()
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<CategoryDTO>>> Get()
         {
-            // שימי לב: השם חייב להיות זהה למה שיש ב-ICategoryService
-            return await _categoryService.GetAllAsync();
+            var categories = await _categoryService.GetAllAsync();
+            return Ok(categories); 
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<ActionResult<CategoryDTO>> Get(int id)
         {
-            try
-            {
-                var category = await _categoryService.GetByIdAsync(id);
-                return Ok(category);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
-            }
+            var category = await _categoryService.GetByIdAsync(id);
+            return Ok(category);
         }
 
         [HttpPost("AddCategory")] // עדיף להשאיר רק נתיב אחד כדי למנוע בלבול

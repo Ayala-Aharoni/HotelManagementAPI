@@ -19,12 +19,20 @@ namespace Repository.Repositories
 
         public async Task<List<Request>> GetAll()
         {
-            return await ctx.Requests.ToListAsync();
+            // אנחנו מוסיפים Include כדי ש-EF יבצע JOIN בבסיס הנתונים ויביא את השמות
+            return await ctx.Requests
+                .Include(r => r.Category)
+                .Include(r => r.Employee)
+                .ToListAsync();
         }
 
-        public async Task<Request> GetById(int id)
+        public async Task<Request?> GetById(int id)
         {
-            return await ctx.Requests.FindAsync(id);
+            // ב-FindAsync אי אפשר להשתמש ב-Include, אז עוברים ל-FirstOrDefaultAsync
+            return await ctx.Requests
+                .Include(r => r.Category)
+                .Include(r => r.Employee)
+                .FirstOrDefaultAsync(r => r.RequestId == id);
         }
 
         public async Task<Request> AddItem(Request item)

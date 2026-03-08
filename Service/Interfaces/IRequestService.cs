@@ -13,8 +13,8 @@ namespace Repository.Interfaces
 {
     public interface IRequestService
     {
-         Task<IEnumerable<Request>> GetAll();
-         Task<Request> GetById(int id);
+         Task<IEnumerable<RequestResponseDTO>> GetAll();
+         Task<RequestResponseDTO>   GetById(int id);
          Task Delete(int id);
 
         Task CreateRequest (RequestDTO request);    

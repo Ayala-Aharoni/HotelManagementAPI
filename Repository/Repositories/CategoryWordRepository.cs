@@ -24,7 +24,7 @@ namespace Repository.Repositories
                 .ToListAsync();
         }
 
-        public async Task<CategoryWord> GetById(int id)
+        public async Task<CategoryWord?> GetById(int id)
         {
             return await ctx.CategoryWords
                 .Include(cw => cw.Category)

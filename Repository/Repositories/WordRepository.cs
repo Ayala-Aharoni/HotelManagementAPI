@@ -22,7 +22,7 @@ namespace Repository.Repositories
             return await ctx.Words.ToListAsync();
         }
 
-        public async Task<Word> GetById(int id)
+        public async Task<Word?> GetById(int id)
         {
             return await ctx.Words.FindAsync(id);
         }

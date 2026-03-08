@@ -19,10 +19,12 @@ namespace Repository.Repositories
 
         public async Task<List<Employee>> GetAll()
         {
-            return await ctx.Employees.ToListAsync();
+            return await ctx.Employees
+         .Include(e => e.Category)
+         .ToListAsync();
         }
 
-        public async Task<Employee> GetById(int id)
+        public async Task<Employee?> GetById(int id)
         {
             return await ctx.Employees.FindAsync(id);
         }

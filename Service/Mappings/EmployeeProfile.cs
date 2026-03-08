@@ -18,8 +18,8 @@ namespace Service.Mappings
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()) // נטפל בסיסמה ידנית כי היא עוברת Hashing
                 .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
 
-            // מיפוי מ-Employee ל-EmployeeDto (להחזרת נתונים)
-            CreateMap<Employee, EmployeeDto>();
+            CreateMap<Employee, EmployeeDto>()
+      .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.CategoryName : "כללי"));
         }
 
     }

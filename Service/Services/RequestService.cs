@@ -20,7 +20,7 @@ namespace Service.Services
 {
     public  class RequestService :IRequestService
     {
-        private readonly IRequestRepository requestRepository;
+        private readonly IRequestRepository _requestRepository;
         private readonly IAlgorithmcs _algorithmics;
         private readonly Icontext ctx;
         private readonly INaiveBase _naiveBase; //עשיתי זאת רק לבדיקה!!!!!!!!!!!!!!!!!!!!! למחוק אחרי שווידאתי שזה עובד!!
@@ -29,38 +29,40 @@ namespace Service.Services
 
         public RequestService(IRequestRepository requestRepository, Icontext ctx,IAlgorithmcs algorithmcs, INaiveBase naiveBase , IHubContext<RequestHub> hubContext , IMapper mapper)
         {
-            this.requestRepository = requestRepository;
+            this._requestRepository = requestRepository;
             this.ctx = ctx;
             this._algorithmics = algorithmcs;
             _naiveBase = naiveBase;
             _hubContext = hubContext;   
             _mapper = mapper;   
         }
-        public async Task<IEnumerable<Request>> GetAll()
+        public async Task<IEnumerable<RequestResponseDTO>> GetAll()
         {
 
-            return await requestRepository.GetAll();
+            var requests = await _requestRepository.GetAll();
+
+            return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
         }
 
-        public async Task<Request> GetById(int id)
+        public async Task<RequestResponseDTO> GetById(int id)
         {
-            var request = await requestRepository.GetById(id);
+            var request = await _requestRepository.GetById(id);
+
             if (request == null)
-            {
-                throw new EntityNotFoundException("בקשה", id);
-            }
-            return request;
+                throw new Exception("Request not found"); // או השגיאה המותאמת שלך
+
+            return _mapper.Map<RequestResponseDTO>(request);
         }
         public async Task Delete(int id)
         {
             // אפשר להוסיף כאן בדיקה: למשל, האם מותר למחוק בקשה שכבר הושלמה?
-            var request = await requestRepository.GetById(id);
+            var request = await _requestRepository.GetById(id);
             if (request == null)
             {
                 throw new EntityNotFoundException("בקשה", id);
             }
 
-            await requestRepository.DeleteItem(id);
+            await _requestRepository.DeleteItem(id);
         }
 
 
@@ -85,7 +87,7 @@ namespace Service.Services
             newRequest.Status = RequestStatus.New; // סטטוס התחלתי
 
             // 3. שמירה בבסיס הנתונים
-            await requestRepository.AddItem(newRequest); 
+            await _requestRepository.AddItem(newRequest); 
 
             // 4. מפר: הפיכת הישות (Request) ל-NotificationDTO (ההודעה לעובד)
             // עכשיו ל-newRequest יש כבר מזהה (ID) מה-DB
@@ -111,12 +113,14 @@ namespace Service.Services
         {
             // קריאה לפונקציה החדשה והיעילה שיצרנו ברפוסיטורי
             // היא מחזירה true אם העדכון הצליח (כלומר אף אחד לא תפס את זה לפנינו)
-            bool success = await requestRepository.TryAssignRequestAsync(
+            bool success = await _requestRepository.TryAssignRequestAsync(
                 requestId,
                 employeeId  
             );
             if (success)
             {
+                // פקודה שקטה לכולם: "תמחקו את בקשה מספר X מהתצוגה"
+                await _hubContext.Clients.All.SendAsync("RemoveRequestFromUI", requestId);
                 // כאן תוכלי להוסיף את הלוגיקה של SignalR בהמשך
                 // await _hubContext.Clients.All.SendAsync("RequestTaken", requestId);!!!!!!!!!!
             }

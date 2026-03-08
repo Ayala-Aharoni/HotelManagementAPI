@@ -28,17 +28,20 @@ namespace HotelAp.Controllers
 
         // GET: api/<RequestController>
         [HttpGet]
-        public async Task<IEnumerable<Request>> GetAll()
+       public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetAll()
         {
-            return await _requestService.GetAll();
+            var list = await _requestService.GetAll();
+            return Ok(list);
         }
 
         // GET api/<RequestController>/5
         [HttpGet("{id}")]
-        public async Task<Request> Get(int id)
+        public async Task<ActionResult<RequestResponseDTO>> Get(int id)
         {
-            return await _requestService.GetById(id);
+            var item = await _requestService.GetById(id);
+            return Ok(item);
         }
+
 
         // POST api/<RequestController>
         [HttpPost]
@@ -58,12 +61,14 @@ namespace HotelAp.Controllers
 
         public void Put(int id, [FromBody] string value)
         {
+            
         }
 
        
         [Authorize(Roles = "Employee")] //חשוב! מודא שיש לו תפקיד של עובד בטוקן כדי שיוכל לתפוס בקשות
         [HttpPost("take/{requestId}")]
       
+
         public async Task<IActionResult> TakeRequest(int requestId)
         {
             var userIdClaim = User

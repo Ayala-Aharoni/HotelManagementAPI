@@ -14,7 +14,15 @@ namespace Service.Mappings
     {
         public CategoryProfile()
         {
-            CreateMap<CategoryDTO, Category>().ReverseMap();
+            // מה-Entity ל-DTO (בשביל הצגת רשימה)
+            CreateMap<Category, CategoryDTO>()
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName));
+
+            // מה-DTO ל-Entity (בשביל הוספה של קטגוריה חדשה)
+            CreateMap<CategoryDTO, Category>()
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName))
+                .ForMember(dest => dest.CategoryId, opt => opt.Ignore()); // אומרים ל-Mapper: אל תיגע ב-ID, ה-DB יטפל בזה
         }
     }
-}
+    }
+

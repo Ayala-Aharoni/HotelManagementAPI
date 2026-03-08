@@ -26,9 +26,9 @@ namespace Repository.Interfaces
             Task<string> Login(LoginEmployeeDTO l);
 
             // כאן מחזירים רשימה של ישויות (או DTO אם תחליטי למפות גם כאן)
-            Task<IEnumerable<Employee>> GetAllEmployeesAsync();
+            Task<IEnumerable<EmployeeDto>> GetAllEmployeesAsync();
 
-            Task<Employee> GetByIdAsync(int id);
+            Task<EmployeeDto> GetByIdAsync(int id);
             Task UpdateEmployeeAsync(int id, Employee emp);
             Task DeleteEmployeeAsync(int id);
         

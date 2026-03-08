@@ -25,22 +25,23 @@ namespace HotelAp.Controllers
         [HttpGet]
         //[Authorize(Roles = "Admin")]
 
-        public async Task<IActionResult> Get()
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<EmployeeDto>>> Get()
         {
-            // כאן כדאי להוסיף מתודה בסרביס GetAllEmployees
+            // הסרוויס כבר מחזיר רשימת DTOs, אז פשוט מעבירים אותה הלאה
             var employees = await _employeeService.GetAllEmployeesAsync();
             return Ok(employees);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<ActionResult<EmployeeDto>> Get(int id)
         {
+            // אם העובד לא קיים, הסרוויס יזרוק Exception והמערכת תחזיר 404 אוטומטית
             var employee = await _employeeService.GetByIdAsync(id);
-            if (employee == null) return NotFound();
             return Ok(employee);
         }
 
-       // [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterEmployeeDTO dto)
         {

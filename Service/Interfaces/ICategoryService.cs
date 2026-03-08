@@ -10,8 +10,8 @@ namespace Service.Interfaces
 {
     public interface ICategoryService
     {
-        Task<IEnumerable<Category>> GetAllAsync();
-        Task<Category> GetByIdAsync(int id);
+        Task<IEnumerable<CategoryDTO>> GetAllAsync();
+        Task<CategoryDTO> GetByIdAsync(int id);
 
         Task<Category> AddCategoryAsync(CategoryDTO dto);
 

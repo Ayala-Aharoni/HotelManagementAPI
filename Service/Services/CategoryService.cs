@@ -25,19 +25,21 @@ namespace Service.Services
             _mapper = mapper;   
         }
 
-        public async Task<IEnumerable<Category>> GetAllAsync()
+        public async Task<IEnumerable<CategoryDTO>> GetAllAsync()
         {
-            return await _categoryRepository.GetAll();
+            var categories = await _categoryRepository.GetAll();
+
+            return _mapper.Map<IEnumerable<CategoryDTO>>(categories);
         }
 
-        public async Task<Category> GetByIdAsync(int id)
+        public async Task<CategoryDTO> GetByIdAsync(int id)
         {
             var category = await _categoryRepository.GetById(id);
 
             if (category == null)
                 throw new EntityNotFoundException("קטגוריה", id);
 
-            return category;
+            return _mapper.Map<CategoryDTO>(category);
         }
 
         public async Task<Category> AddCategoryAsync(CategoryDTO dto)
