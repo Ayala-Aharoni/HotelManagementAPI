@@ -24,8 +24,10 @@ namespace Service
         public Dictionary<string, WordClassificationDTO> WordStatistics { get; private set; } = new Dictionary<string, WordClassificationDTO>();
         private int[] _totalWordsPerCategory;
 
-        private Dictionary<int, int> _categoryIdToIndex = new Dictionary<int, int>();//זה בשביל מיפוי האינדסים 
-
+        private Dictionary<int, int> _categoryIdToIndex = new Dictionary<int, int>(); // מ-ID לאינדקס (0,1,2...)
+        private Dictionary<int, int> _indexToCategoryId = new Dictionary<int, int>(); // מאינדקס (0,1,2...) חזרה ל-ID
+                                                                                      // מילון ששומר את חישובי הממוצע שכבר עשינו למילים שלא היו ב-DB
+        private Dictionary<string, int[]> _similarWordsScoresCache = new Dictionary<string, int[]>(); //זה בשביל המילים הדומות שלא ישלח כמה פעמים לבדיקה
         private int _vocabularySize;
 
         private int _numCategories;
@@ -90,140 +92,140 @@ namespace Service
         public async Task LoadModel()
         {
             var categories = await _Categoryrepo.GetAll();
-            _numCategories = categories.Count();
+            _numCategories = categories.Count;
 
-            // 1. מילוי מילון המיפוי (ID -> Index)
+            // ניקוי המילונים לפני טעינה מחדש
             _categoryIdToIndex.Clear();
+            _indexToCategoryId.Clear();
+
+            // 1. מילוי מילוני המיפוי (דו-כיווני)
             for (int i = 0; i < categories.Count; i++)
             {
-                _categoryIdToIndex[categories[i].CategoryId] = i;
+                int currentId = categories[i].CategoryId;
+
+                _categoryIdToIndex[currentId] = i;      // בשביל LoadDictionaryAsync ו-AddNewWord
+                _indexToCategoryId[i] = currentId;      // בשביל PredictCategory (התשובה הסופית)
             }
 
             var allRequests = await _Requestrepo.GetAll();
-            int totalAllRequests = allRequests.Count();
+            int totalAllRequests = allRequests.Count;
 
             // 2. ספירת בקשות לכל קטגוריה
             var _categoryRequestsCounts = new int[_numCategories];
             for (int i = 0; i < _numCategories; i++)
             {
-                _categoryRequestsCounts[i] = allRequests.Count(r => r.CategoryId == categories[i].CategoryId);
+                // משתמשים ב-ID המקורי מהרשימה כדי לספור
+                int catId = categories[i].CategoryId;
+                _categoryRequestsCounts[i] = allRequests.Count(r => r.CategoryId == catId);
             }
 
-            // 3. חישוב הסתברויות קטגוריה (Priors) עם מניעת אפס
+            // 3. חישוב Priors
             _categoryLogPriors = new double[_numCategories];
             for (int i = 0; i < _numCategories; i++)
             {
                 double pCat;
                 if (totalAllRequests == 0)
                 {
-                    // אם אין בקשות בכלל - הסתברות שווה לכולן (1/כמות הקטגוריות)
                     pCat = 1.0 / _numCategories;
                 }
                 else
                 {
-                    /* התיקון הקריטי: הוספת +1 למונה ו +_numCategories למכנה.
-                       זה מבטיח שאפילו אם לקטגוריה יש 0 בקשות, הציון שלה לא יהיה 0
-                       ולא נקבל Log(0) ששווה למינוס אינסוף.
-                    */
                     pCat = (double)(_categoryRequestsCounts[i] + 1) / (totalAllRequests + _numCategories);
                 }
-
                 _categoryLogPriors[i] = Math.Log(pCat);
-
-                // הדפסת בדיקה לטרמינל כדי לוודא שאין Infinity
-                Console.WriteLine($"Category ID {categories[i].CategoryId} (Index {i}) Initial LogPrior: {_categoryLogPriors[i]:F5}");
             }
 
+            // טעינת המילון הסטטיסטי
             await LoadDictionaryAsync(categories);
         }
+
         public async Task<int> PredictCategory(List<string> words)
         {
+            Console.WriteLine("\n***** STARTING PREDICTION *****");
+
             double[] finalScores = new double[_numCategories];
-            int totalWords = _totalWordsPerCategory.Sum();
-
             Array.Copy(_categoryLogPriors, finalScores, _numCategories);
-            //for (int i = 0; i < _numCategories; i++)
-            //{
-            //    double pCategory = (double)_totalWordsPerCategory[i] / totalWords;
-            //    finalScores[i] = Math.Log(pCategory); // מתחילים מהלוגריתם של הסתברות הקטגוריה
-            //}
 
-            // --- שלב החישוב ---
-            foreach (var word in words)
+            // ניקוי מילים
+            var tokens = words?.Select(w => w.ToLower().Trim()).Where(w => !string.IsNullOrWhiteSpace(w)).ToList() ?? new();
+            Console.WriteLine($"Input Tokens: {string.Join(", ", tokens)}");
+
+            foreach (var word in tokens)
             {
-                Console.WriteLine($"\n--- Analyzing word: '{word}' ---");
-
-                // שליפת הסטטיסטיקה למילה
                 int[] countsForWord = null;
+                Console.WriteLine($"\n--- Analyzing: '{word}' ---");
+
+                // 1. חיפוש במילון
                 if (WordStatistics.TryGetValue(word, out WordClassificationDTO stats))
                 {
                     countsForWord = stats.CategoryCounts;
-                    Console.WriteLine($"Word Counts in DB: {string.Join(", ", countsForWord)}");
+                    Console.WriteLine($"[DB] Found word '{word}'. Counts: {string.Join(", ", countsForWord)}");
                 }
-
                 else
                 {
-                    // 2. המילה לא קיימת - הולכים למילים נרדפות
-                    var synonyms = await _similarWordsService.GetSimilarWordsAsync(word);
-                    if (synonyms != null && synonyms.Any())
+                    // 2. מילים דומות
+                    countsForWord = await GetSynonymCounts(word);
+                }
+
+                if (countsForWord != null)
+                {
+                    for (int i = 0; i < _numCategories; i++)
                     {
-                        // פה נכנסת הפונקציה שלך
-                        countsForWord = GetAverageCountsForSimilarWords(synonyms);
+                        // חישוב הסתברות המילה בקטגוריה (P(Word|Category))
+                        double numerator = countsForWord[i] + 0.5; // alpha = 0.5
+                        double denominator = _totalWordsPerCategory[i] + (0.5 * _vocabularySize);
+                        double pWordGivenCat = numerator / denominator;
+
+                        finalScores[i] += Math.Log(pWordGivenCat);
+                        Console.WriteLine($"   -> Cat Index {i} Score updated to: {finalScores[i]:F5}");
                     }
                 }
-
-                // --- התיקון הזמני (והחכם): אם לא מצאנו מידע סטטיסטי - פשוט מדלגים ---
-                if (countsForWord == null)
+                else
                 {
-                    Console.WriteLine($"[Skip] המילה '{word}' לא קיימת ב-DB ולא נמצאו לה נרדפות. מתעלם ממנה.");
-                    continue;
-                }
-
-
-
-                for (int i = 0; i < _numCategories; i++)
-                {
-                    // 1. מונה: כמות המופעים של המילה בקטגוריה + 1 (Laplace Smoothing)
-                    int wordCountInCat = (countsForWord != null) ? countsForWord[i] : 0;
-                    int numerator = wordCountInCat + 1;
-
-                    // 2. מכנה: סך כל המילים בקטגוריה הזו במילון + גודל המילון הכולל
-                    int denominator = _totalWordsPerCategory[i] + _vocabularySize;
-
-                    // 3. ההסתברות (לפני הלוגריתם - רק בשביל ההדפסה שנבין)
-                    double probability = (double)numerator / denominator;
-                    double logProb = Math.Log(probability);
-
-                    // עדכון הציון הסופי
-                    finalScores[i] += logProb;
-
-                    // הדפסה מפורטת לכל אינדקס
-                    int currentCatId = _categoryIdToIndex.FirstOrDefault(x => x.Value == i).Key;
-                    Console.WriteLine($"Index {i} (ID {currentCatId}): Prob = {numerator}/{denominator} ({probability:F5}), New Total Score: {finalScores[i]:F5}");
+                    Console.WriteLine($"[Skip] No data found for '{word}' or its synonyms.");
                 }
             }
 
-            // --- שלב בחירת המנצח ---
-            Console.WriteLine("\n--- Final Results Summary ---");
-            int bestCategoryIndex = 0;
-            for (int i = 0; i < finalScores.Length; i++)
+            // בחירת המנצח
+            int bestIndex = 0;
+            for (int i = 1; i < finalScores.Length; i++)
             {
-                int catId = _categoryIdToIndex.FirstOrDefault(x => x.Value == i).Key;
-                Console.WriteLine($"Final Score for ID {catId} (Index {i}): {finalScores[i]:F5}");
-
-                if (finalScores[i] > finalScores[bestCategoryIndex])
-                {
-                    bestCategoryIndex = i;
-                }
+                if (finalScores[i] > finalScores[bestIndex]) bestIndex = i;
             }
 
-            int finalWinnerId = _categoryIdToIndex.FirstOrDefault(x => x.Value == bestCategoryIndex).Key;
-            Console.WriteLine($"********************************");
-            Console.WriteLine($"THE WINNER IS: Category ID {finalWinnerId}");
-            Console.WriteLine($"********************************");
+            int winnerId = _categoryIdToIndex.FirstOrDefault(x => x.Value == bestIndex).Key;
+            Console.WriteLine($"\n********************************");
+            Console.WriteLine($"WINNER: Category ID {winnerId} (Index {bestIndex})");
+            Console.WriteLine($"********************************\n");
 
-            return finalWinnerId;
-              }
+            return winnerId;
+        }
+
+
+
+
+        private async Task<int[]> GetSynonymCounts(string word)
+        {
+            // 1. קודם כל בודקים ב"זיכרון המהיר" (ה-Cache) שהוספת למעלה
+            if (_similarWordsScoresCache.TryGetValue(word, out var cached))
+            {
+                return cached;
+            }
+
+            // 2. פונים לסרביס של המילים הדומות כדי לקבל רשימת מילים (כמו "ריח", "ארומה")
+            var similarWordsList = await _similarWordsService.GetSimilarWordsAsync(word);
+
+            // 3. שולחים את הרשימה לפונקציה שלך שעושה ממוצע
+            int[] averageCounts = GetAverageCountsForSimilarWords(similarWordsList?.ToList());
+
+            // 4. שומרים ב-Cache כדי שבפעם הבאה שמישהו יכתוב "ניחוח" זה יהיה מיידי
+            if (averageCounts != null)
+            {
+                _similarWordsScoresCache[word] = averageCounts;
+            }
+
+            return averageCounts;
+        }
 
         public int[] GetAverageCountsForSimilarWords(List<string> similarWords)
         {
@@ -240,8 +242,13 @@ namespace Service
             // 3. ריצה על רשימת המילים שקיבלנו כפרמטר
             foreach (var simWord in similarWords)
             {
-                // בדיקה אם המילה הדומה קיימת במילון הסטטיסטיקות (זה שבזכרון ה-C#)
-                if (WordStatistics.TryGetValue(simWord, out var stats))
+                if (string.IsNullOrWhiteSpace(simWord)) continue;
+
+                // תיקון קריטי: ניקוי המילה לפני החיפוש במילון (Case-insensitive)
+                string cleanedSimWord = simWord.ToLower().Trim();
+
+                // בדיקה אם המילה הדומה קיימת במילון הסטטיסטיקות שלנו
+                if (WordStatistics.TryGetValue(cleanedSimWord, out var stats))
                 {
                     for (int i = 0; i < _numCategories; i++)
                     {
@@ -256,14 +263,15 @@ namespace Service
             {
                 for (int i = 0; i < _numCategories; i++)
                 {
+                    // חילוק המצטבר במספר המילים שמצאנו כדי לקבל "פרופיל ממוצע"
                     sumCounts[i] /= matchCount;
                 }
                 return sumCounts;
             }
 
+            // אם אף אחת מהמילים הדומות לא נמצאה במילון שלנו
             return null;
         }
-
 
 
         public void AddNewWordToDictinary(string wordText, int categoryId, int wordId)

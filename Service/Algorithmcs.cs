@@ -90,7 +90,7 @@ namespace Service
         }   
 
         //פה עוד לא עדכנתי את הדיקשנרי, רק הוספתי את המילים ל-DB, צריך להוסיף גם לעדכון הדיקשנרי!!!!!!!!!!!!!!!!!!!!!
-
+        //זה צריך לעבורר לוורדסרביס
         public async Task InsertWordsIntoWordTable(List<string> analysisWords, int mycategoryId)
         {
             foreach (var wordText in analysisWords)
