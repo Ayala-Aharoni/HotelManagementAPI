@@ -42,6 +42,35 @@ namespace HotelAp.Controllers
             return Ok(item);
         }
 
+        [HttpGet("employee/{employeeId}")]
+        public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetByEmployee(int employeeId)
+        {
+            var items = await _requestService.GetRequestsByEmployee(employeeId);
+            return Ok(items);
+        }
+
+
+
+        [Authorize] // חובה! רק מי שמחובר עם טוקן יכול להיכנס
+        [HttpGet("my-tasks")]
+        public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetMyTasks()
+        {
+            // חילוץ ה-ID מהטוקן (Claims)
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (userIdClaim == null)
+            {
+                return Unauthorized("User ID not found in token");
+            }
+
+            int employeeId = int.Parse(userIdClaim);
+
+            // שליחה ל-Service עם ה-ID האמיתי והמאובטח
+            var tasks = await _requestService.GetMyInProgressTasks(employeeId);
+
+            return Ok(tasks);
+        }
+
 
         // POST api/<RequestController>
         [HttpPost]

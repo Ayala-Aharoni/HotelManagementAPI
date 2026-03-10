@@ -85,8 +85,8 @@ namespace Service
 
         public async Task<int> ClassifyText(List<string> analysisWords)
         {
-            var c = await _naiveBayes.PredictCategory(analysisWords); 
-            return c;   
+            var c = await _naiveBayes.PredictCategory(analysisWords);
+            return c.CategoryId ;   
         }   
 
         //פה עוד לא עדכנתי את הדיקשנרי, רק הוספתי את המילים ל-DB, צריך להוסיף גם לעדכון הדיקשנרי!!!!!!!!!!!!!!!!!!!!!

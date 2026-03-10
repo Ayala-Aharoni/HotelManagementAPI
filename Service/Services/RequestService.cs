@@ -49,10 +49,38 @@ namespace Service.Services
             var request = await _requestRepository.GetById(id);
 
             if (request == null)
-                throw new Exception("Request not found"); // או השגיאה המותאמת שלך
-
+                throw new EntityNotFoundException("בקשה", id);  
             return _mapper.Map<RequestResponseDTO>(request);
         }
+
+        public async Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId)
+        {
+            var employeeExists = await ctx.Employees.AnyAsync(e => e.EmployeeId == employeeId);
+
+            if (!employeeExists)
+            {
+                throw new EntityNotFoundException("עובד", employeeId);
+            }
+
+            var requests = await ctx.Requests
+                .Where(r => r.EmployeeId == employeeId)
+                .ToListAsync();
+
+            return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
+        }
+
+
+        //זה לשאוללל את המורה !!!!
+        public async Task<IEnumerable<RequestResponseDTO>> GetMyInProgressTasks(int employeeId)
+        {
+            // סינון ישירות בשאילתה מול ה-DB - הכי מהיר שיש!
+            var tasks = await ctx.Requests
+                .Where(r => r.EmployeeId == employeeId && r.Status == RequestStatus.InProgress)
+                .ToListAsync();
+
+            return _mapper.Map<IEnumerable<RequestResponseDTO>>(tasks);
+        }
+
         public async Task Delete(int id)
         {
             // אפשר להוסיף כאן בדיקה: למשל, האם מותר למחוק בקשה שכבר הושלמה?

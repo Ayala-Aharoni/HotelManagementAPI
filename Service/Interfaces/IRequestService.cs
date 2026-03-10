@@ -15,6 +15,9 @@ namespace Repository.Interfaces
     {
          Task<IEnumerable<RequestResponseDTO>> GetAll();
          Task<RequestResponseDTO>   GetById(int id);
+        Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId);
+        Task<IEnumerable<RequestResponseDTO>> GetMyInProgressTasks(int employeeId);
+
          Task Delete(int id);
 
         Task CreateRequest (RequestDTO request);    

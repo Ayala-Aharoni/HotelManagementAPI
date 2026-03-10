@@ -12,7 +12,7 @@ namespace Service.Interfaces
     {
         Task LoadModel();
         Task LoadDictionaryAsync(List<Category> categories);
-         Task<int> PredictCategory(List<string> words);
+         Task<PredictionResultDTO> PredictCategory(List<string> words);
 
         int[] GetAverageCountsForSimilarWords(List<string> similarWords);
 

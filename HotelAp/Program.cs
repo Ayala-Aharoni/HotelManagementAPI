@@ -130,7 +130,7 @@ builder.Services.AddCors(options =>
 
 
 var app = builder.Build();
-//app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
+app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

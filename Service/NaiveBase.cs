@@ -10,7 +10,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 namespace Service
 {
     public class NaiveBase : INaiveBase
@@ -139,8 +138,11 @@ namespace Service
             await LoadDictionaryAsync(categories);
         }
 
-        public async Task<int> PredictCategory(List<string> words)
+     
+        public async Task<PredictionResultDTO> PredictCategory(List<string> words)
         {
+            var result = new PredictionResultDTO();//זה העצן שנחזיר עם הקטגוריה המנחשת והרשימה של מילים ללמידה  
+
             Console.WriteLine("\n***** STARTING PREDICTION *****");
 
             double[] finalScores = new double[_numCategories];
@@ -186,6 +188,9 @@ namespace Service
                 }
             }
 
+
+
+
             // בחירת המנצח
             int bestIndex = 0;
             for (int i = 1; i < finalScores.Length; i++)
@@ -198,7 +203,11 @@ namespace Service
             Console.WriteLine($"WINNER: Category ID {winnerId} (Index {bestIndex})");
             Console.WriteLine($"********************************\n");
 
-            return winnerId;
+
+            result.WordsToLearn = tokens;
+            result.CategoryId = winnerId;   
+
+            return result;
         }
 
 
