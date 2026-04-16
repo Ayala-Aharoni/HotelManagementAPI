@@ -7,10 +7,6 @@ using Repository.Repositories;
 using Service.Interfaces;
 using Service.Services;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service
 {
@@ -18,16 +14,18 @@ namespace Service
     {
         public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
         {
-            // שירותים כלליים / Repositories
+            // --- Repositories (נשארים Scoped כי הם עובדים עם ה-DB) ---
             services.AddScoped<IRepository<Request>, RequestRepository>();
             services.AddScoped<IRepository<Word>, WordRepository>();
             services.AddScoped<IRepository<Category>, CategoryRepository>();
             services.AddScoped<ICategoryWordRepository, CategoryWordRepository>();
 
-            // שירותי Business
+            // --- שירותי Business ---
             services.AddScoped<IRequestService, RequestService>();
-            services.AddScoped<IAlgorithmcs, Algorithmics>(); // תלוי בארבעה השירותים למטה
-            services.AddScoped<INaiveBase, NaiveBase>();
+            services.AddScoped<IAlgorithmcs, Algorithmics>();
+
+            // --- המודל של ה-AI: הופך ל-Singleton (חי לנצח בזיכרון) ---
+            services.AddSingleton<INaiveBase, NaiveBase>();
 
             // TextAnalyzer עם Factory שמושך סיסמה מה־appsettings
             services.AddScoped<ITextAnalyzer>(provider =>
@@ -41,16 +39,13 @@ namespace Service
                 return new TextAnalyzer(password);
             });
 
-            // שירותים נוספים אם יש לך
+            // שירותים נוספים
             services.AddScoped<IEmployeeService, EmployeeService>();
             services.AddScoped<CategoryService>();
             services.AddScoped<WordService>();
 
             services.AddHttpClient<SimiliarWordsService>();
-
             services.AddScoped<ISimiliarWord, SimiliarWordsService>();
-
-
 
             return services;
         }

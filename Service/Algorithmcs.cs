@@ -86,66 +86,69 @@ namespace Service
         public async Task<int> ClassifyText(List<string> analysisWords)
         {
             var c = await _naiveBayes.PredictCategory(analysisWords);
-            return c.CategoryId ;   
-        }   
+            return c ;   
+
+        }
 
         //פה עוד לא עדכנתי את הדיקשנרי, רק הוספתי את המילים ל-DB, צריך להוסיף גם לעדכון הדיקשנרי!!!!!!!!!!!!!!!!!!!!!
         //זה צריך לעבורר לוורדסרביס
         public async Task InsertWordsIntoWordTable(List<string> analysisWords, int mycategoryId)
         {
+            Console.WriteLine($"\n[SHERLOCK MODE] Starting check for Category {mycategoryId}");
+
+            Console.WriteLine($"[DEBUG] Dictionary pointer: {_naiveBayes.WordStatistics.GetHashCode()}");
+            Console.WriteLine($"[DEBUG] Total words in Dictionary: {_naiveBayes.WordStatistics.Count}");
+
             foreach (var wordText in analysisWords)
             {
-                // 1. האם המילה קיימת בדיקשנרי?
+                // הדפסה של המילה בדיוק כפי שהיא מגיעה (עם סימנים כדי לראות רווחים)
+                Console.WriteLine($"🔍 Checking word: '>{wordText}<'");
+
                 if (_naiveBayes.WordStatistics.TryGetValue(wordText, out WordClassificationDTO WordClassificationDTO))
                 {
-                    // שולפים את האינדקס הנכון כדי להשתמש בו בבדיקה ובעדכון
-                    int catIdx = _naiveBayes.GetIndex(mycategoryId);
+                    Console.WriteLine($"   ✅ Found in Dictionary! WordId: {WordClassificationDTO.WordId}");
 
-                    if (catIdx != -1) // תמיד כדאי לבדוק ליתר ביטחון
+                    int catIdx = _naiveBayes.GetIndex(mycategoryId);
+                    if (catIdx != -1)
                     {
-                        // 2. המילה קיימת! עכשיו נבדוק במערך אם היא קיימת בקטגוריה הספציפית
-                        // כאן התיקון: משתמשים ב-catIdx במקום ב- (mycategoryId - 1)
                         if (WordClassificationDTO.CategoryCounts[catIdx] > 0)
                         {
-                            // תרחיש: המילה כבר הופיעה בקטגוריה הזו בעבר (ה-Cache אומר לנו שיש קשר)
-                            // אנחנו רק צריכים לעדכן את השכיחות ב-DB
+                            Console.WriteLine($"   📈 Case 1: Word + Category exists. Incrementing...");
                             await _categoryWordRepo.IncrementFrequency(wordText, mycategoryId);
                         }
                         else
                         {
-                            var newRelation = new CategoryWord
-                            {
-                                WordId = WordClassificationDTO.WordId,
-                                CategoryId = mycategoryId,
-                                Frequency = 1
-                            };
+                            Console.WriteLine($"   🔗 Case 2: Word exists, New Category. Linking...");
+                            var newRelation = new CategoryWord { WordId = WordClassificationDTO.WordId, CategoryId = mycategoryId, Frequency = 1 };
                             await _categoryWordRepo.AddItem(newRelation);
                         }
-
-                        WordClassificationDTO.CategoryCounts[catIdx]++;//זה עדכון של הדיקשנרי
+                        WordClassificationDTO.CategoryCounts[catIdx]++;
                     }
                 }
                 else
                 {
-                    var newWord = new Word
+                    // כאן הבלשות מתחילה! 
+                    Console.WriteLine($"   ❌ NOT FOUND in Dictionary: '>{wordText}<'");
+
+                    // בואי נבדוק אם אולי היא קיימת תחת מפתח אחר?
+                    var similarKey = _naiveBayes.WordStatistics.Keys.FirstOrDefault(k => k.Trim() == wordText.Trim());
+                    if (similarKey != null)
                     {
-                        Text = wordText
-                    };
+                        Console.WriteLine($"   ⚠️  WAIT! Found a similar key: '>{similarKey}<'. Maybe a space or casing issue?");
+                    }
+
+                    Console.WriteLine($"   🆕 Going to Case 3: Adding new word to DB...");
+
+                    var newWord = new Word { Text = wordText };
                     await _wordRepo.AddItem(newWord);
 
-                    var newRelation = new CategoryWord
-                    {
-                        WordId = newWord.WordId,
-                        CategoryId = mycategoryId,
-                        Frequency = 1
-                    };
+                    var newRelation = new CategoryWord { WordId = newWord.WordId, CategoryId = mycategoryId, Frequency = 1 };
                     await _categoryWordRepo.AddItem(newRelation);
-                    //זה אם המילה לא קיימת!!
+
                     _naiveBayes.AddNewWordToDictinary(wordText, mycategoryId, newWord.WordId);
                 }
             }
         }
-
     }
 }
     

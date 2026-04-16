@@ -25,7 +25,12 @@ namespace Repository.Entities
         public RequestStatus Status { get; set; }
         public int? EmployeeId { get; set; }
         [ForeignKey("EmployeeId")]
-        public Employee Employee { get; set; }    
+        public Employee Employee { get; set; }
+
+        public int RoomId { get; set; }
+
+        [ForeignKey("RoomId")]
+        public Room Room { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
       

@@ -1,31 +1,23 @@
 ﻿using Common.DTO;
 using Repository.Entities;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Service.Interfaces
 {
     public interface INaiveBase
     {
+        // הפונקציות הראשיות שכולם צריכים
         Task LoadModel();
-        Task LoadDictionaryAsync(List<Category> categories);
-         Task<PredictionResultDTO> PredictCategory(List<string> words);
+        Task<int> PredictCategory(List<string> words);
 
-        int[] GetAverageCountsForSimilarWords(List<string> similarWords);
-
-
+        // למידה בזמן אמת - אם את רוצה לעדכן מילה בודדת בלי לטעון הכל מחדש
         void AddNewWordToDictinary(string wordText, int categoryId, int wordId);
-        int GetIndex(int categoryId);   
+
+        // חשיפת המילון לקריאה בלבד (אם צריך להציג סטטיסטיקות)
         Dictionary<string, WordClassificationDTO> WordStatistics { get; }
 
-
-
-
-
-
-
+        // פונקציית עזר לתרגום ID לאינדקס (אם היא בשימוש מחוץ לקלאס)
+        int GetIndex(int categoryId);
     }
 }

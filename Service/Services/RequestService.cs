@@ -1,4 +1,5 @@
-﻿using Common.DTO;
+﻿using AutoMapper;
+using Common.DTO;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.SignalR; 
 using Microsoft.EntityFrameworkCore;
@@ -9,12 +10,12 @@ using Repository.Repositories;
 using Service.Hubs; 
 using Service.Interfaces;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using AutoMapper;
 
 namespace Service.Services
 {
@@ -26,6 +27,9 @@ namespace Service.Services
         private readonly INaiveBase _naiveBase; //עשיתי זאת רק לבדיקה!!!!!!!!!!!!!!!!!!!!! למחוק אחרי שווידאתי שזה עובד!!
         private readonly IHubContext<RequestHub> _hubContext;
         private readonly IMapper _mapper;
+
+      
+        private static readonly ConcurrentDictionary<int, List<string>> _analyzedWordsCache = new();
 
         public RequestService(IRequestRepository requestRepository, Icontext ctx,IAlgorithmcs algorithmcs, INaiveBase naiveBase , IHubContext<RequestHub> hubContext , IMapper mapper)
         {
@@ -53,6 +57,33 @@ namespace Service.Services
             return _mapper.Map<RequestResponseDTO>(request);
         }
 
+        //public async Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId)
+        //{
+        //    var employeeExists = await ctx.Employees.AnyAsync(e => e.EmployeeId == employeeId);
+
+        //    if (!employeeExists)
+        //    {
+        //        throw new EntityNotFoundException("עובד", employeeId);
+        //    }
+
+        //    var requests = await ctx.Requests
+        //        .Where(r => r.EmployeeId == employeeId)
+        //        .ToListAsync();
+
+        //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
+        //}
+
+
+        //זה לשאוללל את המורה !!!!
+        //public async Task<IEnumerable<RequestResponseDTO>> GetMyInProgressTasks(int employeeId)
+        //{
+        //    // סינון ישירות בשאילתה מול ה-DB - הכי מהיר שיש!
+        //    var tasks = await ctx.Requests
+        //        .Where(r => r.EmployeeId == employeeId && r.Status == RequestStatus.InProgress)
+        //        .ToListAsync();
+
+        //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(tasks);
+        //}
         public async Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId)
         {
             var employeeExists = await ctx.Employees.AnyAsync(e => e.EmployeeId == employeeId);
@@ -69,17 +100,24 @@ namespace Service.Services
             return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
         }
 
-
-        //זה לשאוללל את המורה !!!!
-        public async Task<IEnumerable<RequestResponseDTO>> GetMyInProgressTasks(int employeeId)
+        public async Task<IEnumerable<RequestResponseDTO>> GetAvailableRequestsByCategory(int categoryId)
         {
-            // סינון ישירות בשאילתה מול ה-DB - הכי מהיר שיש!
-            var tasks = await ctx.Requests
-                .Where(r => r.EmployeeId == employeeId && r.Status == RequestStatus.InProgress)
+            // 1. בדיקה אופציונלית אם הקטגוריה קיימת (דומה לבדיקת העובד שלך)
+            var categoryExists = await ctx.Categories.AnyAsync(c => c.CategoryId == categoryId);
+            if (!categoryExists)
+            {
+                throw new EntityNotFoundException("קטגוריה", categoryId);
+            }
+
+            // 2. שליפת הבקשות: סטטוס NEW וגם שייכות לקטגוריה
+            var requests = await ctx.Requests
+                .Where(r => r.Status == RequestStatus.New && r.CategoryId == categoryId)
                 .ToListAsync();
 
-            return _mapper.Map<IEnumerable<RequestResponseDTO>>(tasks);
+            // 3. מיפוי ל-DTO והחזרה
+            return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
         }
+
 
         public async Task Delete(int id)
         {
@@ -102,7 +140,6 @@ namespace Service.Services
         {
             var result = await _algorithmics.AnalisisRequest(RequestDTO.Description);
             Console.WriteLine($"Sending to Predict: {result.Count} words.");
-            await _naiveBase.LoadModel();//למחוקקקק את זה מכאן אחר כךךךך זה לא אמור להיות כל בקשה רק וידאי שהכל עובד פה!!!!!!!!!!
             var category = await _algorithmics.ClassifyText(result);
 
             Console.WriteLine("********************************");
@@ -113,9 +150,18 @@ namespace Service.Services
             Request newRequest = _mapper.Map<Request>(RequestDTO);
             newRequest.CategoryId = category;
             newRequest.Status = RequestStatus.New; // סטטוס התחלתי
+            newRequest.RoomId = 2;
 
             // 3. שמירה בבסיס הנתונים
-            await _requestRepository.AddItem(newRequest); 
+            await _requestRepository.AddItem(newRequest);
+
+            Console.WriteLine($"!!! FINAL CHECK BEFORE DB SAVE !!!");
+            Console.WriteLine($"Request Description: {newRequest.Description}");
+            Console.WriteLine($"Category ID to be saved: {newRequest.CategoryId}");
+            Console.WriteLine($"Status: {newRequest.Status}");
+
+            //זה בשביל ההמילים שאעשה אותם בהמשך רק בלקיחת!
+            _analyzedWordsCache[newRequest.RequestId] = result;
 
             // 4. מפר: הפיכת הישות (Request) ל-NotificationDTO (ההודעה לעובד)
             // עכשיו ל-newRequest יש כבר מזהה (ID) מה-DB
@@ -129,6 +175,7 @@ namespace Service.Services
             Console.WriteLine($"Notification sent to group {category}");
 
 
+
             //TODOOOOOOOOOOOOOO
             //כאן עלי ליצור בקשה חדשה באמת עם הקטגוריה המתאימה שהאלגוריתם החזיר לי ולשמור אותה בבסיס הנתונים    
             //כאן גם אמור להיות הלוגיקה של ה-SignalR שידווח ל-Frontend שיש בקשה חדשה (ככה שהעובדים יוכלו לראות את זה בזמן אמת)!!!!!!!!!!
@@ -139,6 +186,9 @@ namespace Service.Services
         // הוסיפי את ה-ID כפרמטר לפונקציה (הוא יגיע מה-Controller)
         public async Task<bool> TakeRequest(int requestId, int employeeId)
         {
+
+            //await _naiveBase.LoadModel();//למחוקקקק את זה מכאן אחר כךךךך זה לא אמור להיות כל בקשה רק וידאי שהכל עובד פה!!!!!!!!!!
+
             // קריאה לפונקציה החדשה והיעילה שיצרנו ברפוסיטורי
             // היא מחזירה true אם העדכון הצליח (כלומר אף אחד לא תפס את זה לפנינו)
             bool success = await _requestRepository.TryAssignRequestAsync(
@@ -149,8 +199,16 @@ namespace Service.Services
             {
                 // פקודה שקטה לכולם: "תמחקו את בקשה מספר X מהתצוגה"
                 await _hubContext.Clients.All.SendAsync("RemoveRequestFromUI", requestId);
-                // כאן תוכלי להוסיף את הלוגיקה של SignalR בהמשך
-                // await _hubContext.Clients.All.SendAsync("RequestTaken", requestId);!!!!!!!!!!
+
+                var finalRequest = await _requestRepository.GetById(requestId);
+
+                //זה בעצם ללמידה שקורית רק עכשיו שמשהו לקח זה אומר שאכן הקטגוריה מתאימה
+                if (_analyzedWordsCache.TryRemove(requestId, out var words))
+                {
+                   
+                    await _algorithmics.InsertWordsIntoWordTable(words, finalRequest.CategoryId);
+                }
+
             }
 
             return success;

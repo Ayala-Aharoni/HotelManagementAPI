@@ -79,7 +79,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 
 
-
 //מכאן כל מה שתוך ירוק ארוך זה שלי :)
 /////////////////////////////////////////
 ///בכל בקשה יוצר מופע-עבור גולש
@@ -128,8 +127,16 @@ builder.Services.AddCors(options =>
 });
 
 
-
+//!
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var naiveBase = scope.ServiceProvider.GetRequiredService<INaiveBase>();
+    // קורא ל-LoadModel שכתבנו, שמושך הכל מה-DB לזיכרון
+    await naiveBase.LoadModel();
+}
+//
 app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
 app.UseSwagger();
 app.UseSwaggerUI(c =>

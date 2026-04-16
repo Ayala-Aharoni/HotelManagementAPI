@@ -18,17 +18,17 @@ namespace HotelAp.Controllers
     {
         private readonly IRequestService _requestService;
 
-        
+
         public RequestController(IRequestService requestService)
         {
-            
+
             this._requestService = requestService;
         }
 
 
         // GET: api/<RequestController>
         [HttpGet]
-       public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetAll()
+        public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetAll()
         {
             var list = await _requestService.GetAll();
             return Ok(list);
@@ -42,14 +42,14 @@ namespace HotelAp.Controllers
             return Ok(item);
         }
 
-        [HttpGet("employee/{employeeId}")]
-        public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetByEmployee(int employeeId)
-        {
-            var items = await _requestService.GetRequestsByEmployee(employeeId);
-            return Ok(items);
-        }
-
-
+        //[HttpGet("employee/{employeeId}")]
+        //public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetByEmployee(int employeeId)
+        //{
+        //    var items = await _requestService.GetRequestsByEmployee(employeeId);
+        //    return Ok(items);
+        //}
+        //אלו הן 2 פונקציות שאני לא בטוחה שריך לעשות!!!!
+        //לשאול משהי האם אלו דברים שאמורים להשמר בצד ריקאקט או שזה בסדר שהם יהיו פה
 
         [Authorize] // חובה! רק מי שמחובר עם טוקן יכול להיכנס
         [HttpGet("my-tasks")]
@@ -66,9 +66,24 @@ namespace HotelAp.Controllers
             int employeeId = int.Parse(userIdClaim);
 
             // שליחה ל-Service עם ה-ID האמיתי והמאובטח
-            var tasks = await _requestService.GetMyInProgressTasks(employeeId);
+            var tasks = await _requestService.GetRequestsByEmployee(employeeId);
 
             return Ok(tasks);
+        }
+        [Authorize]
+        [HttpGet("available")]
+        public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetAvailableRequests()
+        {
+            // חילוץ הקטגוריה מהטוקן (שימי לב שהשם "CategoryId" חייב להיות זהה למה ששמת ב-Login)
+            var categoryIdClaim = User.FindFirst("CategoryId")?.Value;
+            if (categoryIdClaim == null) return BadRequest("Category ID not found in token");
+
+            int categoryId = int.Parse(categoryIdClaim);
+
+            // קריאה ל-Service שתביא רק בקשות בסטטוס NEW ובקטגוריה המתאימה
+            var availableRequests = await _requestService.GetAvailableRequestsByCategory(categoryId);
+
+            return Ok(availableRequests);
         }
 
 
@@ -80,7 +95,7 @@ namespace HotelAp.Controllers
             if (Req == null || string.IsNullOrWhiteSpace(Req.Description))
                 return BadRequest("Description is required!");
 
-             await _requestService.CreateRequest(Req);
+            await _requestService.CreateRequest(Req);
 
             return Ok(new { Message = "הבקשה נוצרה בהצלחה" }); // מחזיר JSON אוטומטית
         }
@@ -90,13 +105,13 @@ namespace HotelAp.Controllers
 
         public void Put(int id, [FromBody] string value)
         {
-            
+
         }
 
-       
+
         [Authorize(Roles = "Employee")] //חשוב! מודא שיש לו תפקיד של עובד בטוקן כדי שיוכל לתפוס בקשות
         [HttpPost("take/{requestId}")]
-      
+
 
         public async Task<IActionResult> TakeRequest(int requestId)
         {
