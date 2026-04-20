@@ -11,28 +11,32 @@ namespace Repository.Entities
 {
     public class HotelDbContext : DbContext, Icontext
     {
-
         public DbSet<Employee> Employees { get; set; }
         public DbSet<Request> Requests { get; set; }
         public DbSet<Category> Categories { get; set; }
         public DbSet<Word> Words { get; set; }
         public DbSet<CategoryWord> CategoryWords { get; set; }
+        public DbSet<Room> Rooms { get; set; }
 
         public async Task Save()
         {
             await SaveChangesAsync();
         }
 
-        //כל זה קופילוט הציע מהה המורה אומרת???????????????????????????????
-
-
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             optionsBuilder.UseSqlServer("server=DESKTOP-1VUANBN;database=HotelApDB;trusted_connection=true;TrustServerCertificate=True");
         }
-        //פעולה זו על בשביל SQL כי יש לי 2 מפתחו זרים 
+
+        // פונקציה אחת שמרכזת ה-כ-ל
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            // 1. התיקון של ה-Room (מיפוי לקוד מול ה-DB)
+            modelBuilder.Entity<Room>().ToTable("Room");
+
+            // 2. הגדרות קשרים ומפתחות זרים (כדי למנוע מחיקות משורשרות בעייתיות ב-SQL)
             modelBuilder.Entity<Employee>()
                 .HasOne(e => e.Category)
                 .WithMany(c => c.Employees)

@@ -4,12 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.DTO
+namespace Common
 {
-    public class RequestDTO
+    public class RoomDTO
     {
-        public string Description { get; set; }
-     
-
+        public string RoomNumber { get; set; }
     }
 }

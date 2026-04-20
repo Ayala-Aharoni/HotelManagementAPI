@@ -21,6 +21,8 @@ namespace Repository
             services.AddScoped<IRepository<Word>, WordRepository>();
             services.AddScoped<IRepository<Request>, RequestRepository>();
             services.AddScoped<IRequestRepository, RequestRepository>();
+            services.AddScoped<IRoomRepository, RoomRepositoryv>(); // רישום הרפוזיטורי
+
 
 
 

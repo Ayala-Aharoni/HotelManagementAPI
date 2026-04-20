@@ -15,6 +15,7 @@ namespace Repository.Interfaces
         public DbSet<Category> Categories { get; set; }
         public DbSet<Word> Words { get; set; }
         DbSet<CategoryWord> CategoryWords { get; set; }
+        DbSet<Room> Rooms { get; set; }
         Task Save();
 
     }

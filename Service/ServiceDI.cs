@@ -47,6 +47,10 @@ namespace Service
             services.AddHttpClient<SimiliarWordsService>();
             services.AddScoped<ISimiliarWord, SimiliarWordsService>();
 
+
+            // --- הגדרות Room (חדר וטאבלט) ---
+            services.AddScoped<IRoomService, RoomService>();       // רישום הסרוויס
+
             return services;
         }
     }

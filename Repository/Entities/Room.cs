@@ -11,16 +11,20 @@ namespace Repository.Entities
     {
 
         [Key]
-        public int Id { get; set; } 
+        public int Id { get; set; }
 
         [Required]
-        public string RoomNumber { get; set; } // מספר החדר (למשל "101" או "סוויטה 5")
+        public string RoomNumber { get; set; } // מספר החדר (למשל "101")
+
+       
 
         [Required]
-        public string TabletIpAddress { get; set; } // ה-IP הייחודי של הטאבלט באותו חדר
+        public bool IsTabletActive { get; set; } = false; // האם הטאבלט הופעל בחדר?
 
-        // קשר לבקשות - חדר אחד יכול שיהיו לו הרבה בקשות
+      
 
+     
         public virtual ICollection<Request> Requests { get; set; } = new List<Request>();
     }
 }
+

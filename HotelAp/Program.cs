@@ -88,6 +88,7 @@ builder.Services.AddScoped<Icontext,HotelDbContext>();
 
 
 builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IRoomService, RoomService>();    
 
 
 // Repositories

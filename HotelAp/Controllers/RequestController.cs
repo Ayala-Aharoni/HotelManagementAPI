@@ -89,16 +89,56 @@ namespace HotelAp.Controllers
 
         // POST api/<RequestController>
         [HttpPost]
+    //    [Authorize(Roles = "RoomTablet")] // רק טאבלט שהוגדר יכול לשלוח בקשות
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] RequestDTO Req)
         {
+            // 1. בדיקת תקינות בסיסית
             if (Req == null || string.IsNullOrWhiteSpace(Req.Description))
                 return BadRequest("Description is required!");
 
-            await _requestService.CreateRequest(Req);
+            try
+            {
+                // 2. שליפת ה-RoomId מהטוקן (Claims)
+                // User.FindFirst שולף את המידע שהוצפן בתוך ה-JWT
+                var roomIdClaim = User.FindFirst("RoomId")?.Value;
 
-            return Ok(new { Message = "הבקשה נוצרה בהצלחה" }); // מחזיר JSON אוטומטית
+                if (string.IsNullOrEmpty(roomIdClaim))
+                {
+                    return Unauthorized("מזהה חדר לא נמצא בטוקן - יש לבצע Setup מחדש");
+                }
+
+                int roomId = int.Parse(roomIdClaim);
+
+                // 3. קריאה לסרוויס עם ה-ID המאובטח
+                await _requestService.CreateRequest(Req, roomId);
+
+                return Ok(new { Message = "הבקשה נוצרה בהצלחה", RoomId = roomId });
+            }
+            catch (Exception ex)
+            {
+                // רישום השגיאה (במציאות עדיף להשתמש ב-Logger)
+                return BadRequest(new { Message = "שגיאה ביצירת הבקשה", Details = ex.Message });
+            }
         }
+        [HttpPut("{id}/reassign-to-reception")]
+        public async Task<IActionResult> ReassignToReception(int id)
+        {
+            try
+            {
+                // קריאה לפונקציה שכתבנו ב-Service
+                await _requestService.ReassignToReception(id);
+                return Ok(new { message = "Request reassigned successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
+
+
 
         // PUT api/<RequestController>/5
         [HttpPut("{id}")]

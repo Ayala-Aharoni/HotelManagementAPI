@@ -11,6 +11,7 @@ namespace Common.DTO
         public int RequestId { get; set; }
         public string Title { get; set; } = "בקשה חדשה הגיעה!";
         public string Description { get; set; }
+        public string RoomNumber { get; set; }
         public DateTime CreatedAt { get; set; }
         public string ActionType { get; set; } = "NewRequest"; // עוזר לריאקט לדעת מה לעשות
     }
