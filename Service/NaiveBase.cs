@@ -40,6 +40,8 @@ namespace Service
                 var categoryWordRepo = scope.ServiceProvider.GetRequiredService<ICategoryWordRepository>();
                 // הוספת ה-Repository של הבקשות כדי לחשב הסתברות מוקדמת
                 var requestRepo = scope.ServiceProvider.GetRequiredService<IRepository<Request>>();
+                //זה הוא הוסיף לי ביום הזה .... אם זה מסבך להוריד מיד עוד לא בדקתי
+                var wordRepo = scope.ServiceProvider.GetRequiredService<IRepository<Word>>();
 
                 var categories = await categoryRepo.GetAll();
                 if (categories == null || !categories.Any())
@@ -79,15 +81,40 @@ namespace Service
                 }
 
                 // 3. טעינת המילון הסטטיסטי (מילים ושכיחויות)
-                await LoadDictionaryInternal(categories.ToList(), categoryWordRepo);
+                await LoadDictionaryInternal(categories.ToList(), categoryWordRepo ,wordRepo);
 
                 Console.WriteLine($"[LoadModel] SUCCESS: Model loaded with {WordStatistics.Count} words and statistical Priors.");
             }
         }
-        private async Task LoadDictionaryInternal(List<Category> categories, ICategoryWordRepository categoryWordRepo)
+        private async Task LoadDictionaryInternal(List<Category> categories, ICategoryWordRepository categoryWordRepo , IRepository<Word> wordRepo  )
         {
-            var allLinks = await categoryWordRepo.GetAll();
+
+            //////////////////////////////
+            ///זה הוא הוסיף לי ביום הזה .... אם זה מסבך להוריד מיד עוד לא בדקתי 
+            var allWords = await wordRepo.GetAll();
             WordStatistics.Clear();
+            _vocabularySize = 0;
+
+            foreach (var w in allWords)
+            {
+                string text = w.Text.ToLower().Trim();
+                if (!WordStatistics.ContainsKey(text))
+                {
+                    WordStatistics[text] = new WordClassificationDTO(_numCategories)
+                    {
+                        Word = text,
+                        WordId = w.WordId // כאן המפתח: המערכת זוכרת את ה-ID האמיתי מה-DB
+                    };
+                    _vocabularySize++;
+                }
+            }
+            /////////////////////////////
+
+
+
+            var allLinks = await categoryWordRepo.GetAll();
+            //זה בירוק בגלל החלק הלמעלה אם מורידים תלמעלה להוריד גם אותו 
+           // WordStatistics.Clear();
             _vocabularySize = 0;
 
             foreach (var link in allLinks)
@@ -231,9 +258,9 @@ namespace Service
         }
 
         // מימוש ה-Interface שחסר לך
-        public async Task LoadDictionaryAsync(List<Category> categories, ICategoryWordRepository _categoryWordRepo)
+        public async Task LoadDictionaryAsync(List<Category> categories, ICategoryWordRepository _categoryWordRepo, IRepository<Word> wordRepo  )
         {
-            await LoadDictionaryInternal(categories, _categoryWordRepo);
+            await LoadDictionaryInternal(categories, _categoryWordRepo, wordRepo);
         }
     }
 }

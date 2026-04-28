@@ -1,17 +1,19 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Common;
+using Common.DTO;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Repository.Entities;
+using Repository.Exception;
 using Repository.Interfaces;
-using Common.DTO;
+using Service.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Common;
-using Service.Interfaces;
 
 namespace Service.Services
 {
@@ -25,48 +27,41 @@ namespace Service.Services
             _roomRepository = roomRepository;
             _configuration = configuration;
         }
-
         public async Task<string> SetupRoomAsync(RoomDTO R)
         {
-            Console.WriteLine(">>> [RoomService] מתחיל SetupRoomAsync");
-
-            if (R == null)
+            // 1. וולידציה בסיסית - שלא ינסו לשלוח אובייקט ריק
+            if (R == null || string.IsNullOrWhiteSpace(R.RoomNumber))
             {
-                Console.WriteLine(">>> [RoomService] שגיאה: ה-DTO שהתקבל הוא NULL");
-                throw new Exception("נתוני חדר חסרים");
+                throw new AppException("חובה להזין מספר חדר תקין", HttpStatusCode.BadRequest);
             }
 
-            Console.WriteLine($">>> [RoomService] מחפש ב-DB חדר מספר: {R.RoomNumber}");
-
-            // 1. חיפוש החדר
+            // 2. חיפוש החדר - אם לא נמצא, זורקים 404 (NotFound)
             var room = await _roomRepository.GetByRoomNumberAsync(R.RoomNumber);
 
             if (room == null)
             {
-                Console.WriteLine($">>> [RoomService] שגיאה: חדר {R.RoomNumber} לא נמצא בבסיס הנתונים!");
-                throw new Exception("החדר לא קיים במערכת");
+                throw new AppException($"חדר מספר {R.RoomNumber} אינו רשום במערכת המלון", HttpStatusCode.NotFound);
             }
 
-            Console.WriteLine($">>> [RoomService] חדר נמצא בהצלחה. ID: {room.Id}. מעדכן סטטוס טאבלט...");
-
+            // 3. עדכון הסטטוס ויצירת הטוקן
             try
             {
-                // 2. עדכון סטטוס
                 room.IsTabletActive = true;
-                await _roomRepository.UpdateItem(room.Id, room);
-                Console.WriteLine($">>> [RoomService] סטטוס עודכן ל-Active. עובר ליצירת טוקן...");
 
-                // 3. יצירת הטוקן
+                await _roomRepository.UpdateItem(room.Id, room);
+
+                // יצירת הטוקן (הזהות של הטאבלט מעכשיו והלאה)
                 var token = GenerateToken(room);
-                Console.WriteLine(">>> [RoomService] טוקן נוצר בהצלחה ומצולם חזרה לקונטרולר.");
                 return token;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($">>> [RoomService] קריסה בזמן עדכון או יצירת טוקן: {ex.Message}");
-                throw;
+                // כאן אנחנו תופסים שגיאות של בסיס נתונים וכדומה
+                throw new AppException("שגיאה בתקשורת עם בסיס הנתונים", HttpStatusCode.ServiceUnavailable);
             }
         }
+
+     
 
         private string GenerateToken(Room room)
         {

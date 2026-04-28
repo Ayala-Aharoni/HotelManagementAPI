@@ -135,6 +135,7 @@ namespace Service.Services
 
        
 
+
         //פפה אני מזמנת את כל האלגוריתמים או לא?? לשאול ??
         //כאילו מבחינתי זה אמור ליצור BEW REQUEST עם קטגוריה שתחזור לי מכל הפונקציות שאזמו
         //createRequest
@@ -206,31 +207,43 @@ namespace Service.Services
             var request = await _requestRepository.GetById(requestId);
             if (request == null) throw new Exception("Request not found");
 
-            // 2. שליפה דינמית של קטגוריית "קבלה" לפי השם שלה
-            // (תוודאי שב-DB השם הוא בדיוק "Reception" או איך שקראת לזה)
+            // שומרים את ה-ID הישן כדי שנדע את מי "להעניש" אחר כך
+            int wrongCategoryId = request.CategoryId;
+
+            // 2. שליפה של קטגוריית "קבלה"
             var allCategories = await _categoryRepository.GetAll();
             var receptionCategory = allCategories.FirstOrDefault(c => c.CategoryName == "Reception");
 
             if (receptionCategory == null)
             {
-                throw new Exception("שגיאת מערכת: קטגוריית קבלה (Reception) לא נמצאה בבסיס הנתונים");
+                throw new Exception("שגיאת מערכת: קטגוריית קבלה לא נמצאה");
             }
 
             int receptionId = receptionCategory.CategoryId;
 
-            // 3. עדכון הבקשה
+            // 3. עדכון הבקשה ב-DB
             request.CategoryId = receptionId;
-            request.EmployeeId = null; // משחררים את העובד הנוכחי מהמשימה
-            request.Status = RequestStatus.New; // מחזירים אותה למצב "חדש" כדי שתקפוץ לאחרים
+            request.EmployeeId = null;
+            request.Status = RequestStatus.New;
 
             await _requestRepository.UpdateItem(requestId, request);
 
-            // 4. SignalR - שליחה לקבוצה של הקבלה
+            // 4. SignalR - עדכון בזמן אמת לקבלה
             var notification = _mapper.Map<NotificationDTO>(request);
             await _hubContext.Clients.Group(receptionId.ToString())
                 .SendAsync("ReceiveNotification", notification);
 
-            Console.WriteLine($"Request {requestId} was redirected to {receptionCategory.CategoryName} (ID: {receptionId})");
+            // 5. ענישה למודל - Sherlock Mode: Correction
+            // אנחנו שולפים מהקאש את המילים שגרמו לסיווג המוטעה
+            if (_analyzedWordsCache.TryGetValue(requestId, out var words))
+            {
+                // קוראים לפונקציה שכתבנו שמורידה את ה-Frequency של המילים בקטגוריה הטועה
+                await _algorithmics.DecreaseWordsFrequency(words, wrongCategoryId);
+
+                Console.WriteLine($"[AI-PUNISH] Reduced weight for {words.Count} words in Category {wrongCategoryId}");
+            }
+
+            Console.WriteLine($"Request {requestId} was redirected to Reception");
         }
         public async Task<bool> TakeRequest(int requestId, int employeeId)
         {
@@ -239,12 +252,14 @@ namespace Service.Services
 
             // קריאה לפונקציה החדשה והיעילה שיצרנו ברפוסיטורי
             // היא מחזירה true אם העדכון הצליח (כלומר אף אחד לא תפס את זה לפנינו)
-            bool success = await _requestRepository.TryAssignRequestAsync(
-                requestId,
-                employeeId  
-            );
-            if (success)
+            bool success = await _requestRepository.TryAssignRequestAsync(requestId, employeeId);
+
+            // 3. טיפול בכשלון: אם success הוא false, מישהו כבר תפס את זה
+            if (!success)
             {
+                // כאן אנחנו זורקים את השגיאה המיוחדת שיצרנו (409 Conflict)
+                throw new RequestExceptions.RequestAlreadyAssigned();
+            }
                 // פקודה שקטה לכולם: "תמחקו את בקשה מספר X מהתצוגה"
                 await _hubContext.Clients.All.SendAsync("RemoveRequestFromUI", requestId);
 
@@ -256,10 +271,7 @@ namespace Service.Services
                    
                     await _algorithmics.InsertWordsIntoWordTable(words, finalRequest.CategoryId);
                 }
-
-            }
-
-            return success;
+            return true;
         }
 
 
@@ -302,6 +314,40 @@ namespace Service.Services
 
                 throw new Exception("לא ניתן להשלים את הבקשה. וודאו שהנתונים תקינים.");
             }
+        }
+
+        //פונקציה שפקיד בקבלה מסווג באופן ידני את הבקשה למקום המתאים 
+        public async Task TransferRequestToCorrectCategory(int requestId, int correctCategoryId)
+        {
+            // 1. שליפת הבקשה הנוכחית
+            var request = await _requestRepository.GetById(requestId);
+            if (request == null) throw new Exception("Request not found");
+
+            // 2. מציאת ה-ID של הקבלה באופן דינמי (בשביל ה-SignalR)
+            var allCategories = await _categoryRepository.GetAll();
+            var reception = allCategories.FirstOrDefault(c => c.CategoryName == "Reception");
+            if (reception == null) throw new Exception("Reception category not found");
+
+            // 3. עדכון הנתונים - אנחנו מכינים את האובייקט לעדכון
+            request.CategoryId = correctCategoryId;
+            request.Status = RequestStatus.New;
+            request.EmployeeId = null; // משחררים עובד קודם אם היה
+
+            // קריאה לפונקציית ה-UpdateItem שלך - כאן השינוי נשמר סופית ב-DB
+            await _requestRepository.UpdateItem(requestId, request);
+
+            // 4. SignalR - עדכון הממשק
+
+            // מעיפים מהמסך של הקבלה (הקבוצה הדינמית)
+            await _hubContext.Clients.Group(reception.CategoryId.ToString())
+                .SendAsync("RemoveRequestFromUI", requestId);
+
+            // שולחים למסך של המחלקה הנכונה
+            var notification = _mapper.Map<NotificationDTO>(request);
+            await _hubContext.Clients.Group(correctCategoryId.ToString())
+                .SendAsync("ReceiveNotification", notification);
+
+            Console.WriteLine($"[FLOW] Request {requestId} was transferred by Reception to Category {correctCategoryId}");
         }
         public async Task Update(int id, RequestDTO requestDto)
         {

@@ -17,6 +17,7 @@ namespace Service.Interfaces
 
         Task<int> ClassifyText(List<string> analysisWords);
         Task InsertWordsIntoWordTable(List<string> analysisWords, int mycategoryId);
+        Task DecreaseWordsFrequency(List<string> analysisWords, int wrongCategoryId);   
 
 
     }

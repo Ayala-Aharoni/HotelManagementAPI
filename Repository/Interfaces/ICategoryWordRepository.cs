@@ -10,5 +10,7 @@ namespace Repository.Interfaces
     public interface ICategoryWordRepository: IRepository<CategoryWord>
     {
         public Task IncrementFrequency(string wordText, int categoryId);
+         public Task DecrementFrequency(string wordText, int categoryId);
+
     }
 }

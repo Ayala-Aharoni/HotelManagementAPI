@@ -22,8 +22,11 @@ namespace Repository.Interfaces
 
         Task CreateRequest (RequestDTO request, int roomI);
         Task ReassignToReception(int requestId);
+
         Task<bool> TakeRequest(int requestId, int employeeId);
+         Task TransferRequestToCorrectCategory(int requestId, int correctCategoryId);      
 
         Task CompleteRequest(int requestId, int employeeId);
+
     }
 }

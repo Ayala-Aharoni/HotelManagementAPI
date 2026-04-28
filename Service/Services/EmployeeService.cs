@@ -40,34 +40,36 @@ namespace Service.Services
         //עשיתי כאן ללא ההרשאות שרק מנהל יכול לעשות זאת 
         public async Task<string> Register(RegisterEmployeeDTO R)
         {
+            // 1. בדיקה אם המייל כבר תפוס
             var existingEmployee = await _employeeRepository.GetByEmailAsync(R.Email);
-
             if (existingEmployee != null)
             {
-                // זריקת שגיאה ברורה שתחזור ללקוח
-                throw new Exception("משתמש עם אימייל זה כבר קיים במערכת");
+                throw new AppException.UserAlreadyExistsException();
             }
 
-
+            // 2. בדיקה שהקטגוריה קיימת - שימוש בשליפה לפי ID
+            // 2. בדיקה שהקטגוריה קיימת
+            // טיפ: עדיף להשתמש ב-GetById ישיר ב-Repository אם יש לך, במקום להביא את כל הרשימה
             var category = (await _categoryRepository.GetAll())
                             .FirstOrDefault(c => c.CategoryId == R.CategoryId);
 
+           
             if (category == null)
-                throw new Exception("קטגוריה לא נמצאה");
-            var employee = _mapper.Map<Employee>(R);
+            {
+                throw new AppException.NotFoundException("הקטגוריה שנבחרה לא נמצאה במערכת");
+            }
 
-            // עדיין צריך לטפל ידנית בדברים שלא קיימים ב-DTO או דורשים לוגיקה מיוחדת
+            // 3. מיפוי והצפנה
+            var employee = _mapper.Map<Employee>(R);
             employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(R.PassWord);
             employee.CategoryId = category.CategoryId;
 
+            // 4. שמירה
             await _employeeRepository.AddItem(employee);
 
-            // יצירת טוקן כדי שהמשתמש יהיה מחובר מיד
-            var token = GenerateToken(employee);
-
-            return token;
-        }
-        //עשיתי גאן עם זרואו זרקתי כאילו אקסשים האם ככה?
+            // 5. יצירת טוקן
+            return GenerateToken(employee);
+        }        //עשיתי גאן עם זרואו זרקתי כאילו אקסשים האם ככה?
         public async Task<string> Login(LoginEmployeeDTO l)
         {
 
@@ -135,7 +137,8 @@ namespace Service.Services
         new Claim(ClaimTypes.Name, e.Fullname),
         new Claim(ClaimTypes.Email, e.Email),
         new Claim(ClaimTypes.Role, e.Role),
-        new Claim("CategoryId", e.CategoryId.ToString())
+        new Claim("CategoryId", e.CategoryId.ToString()),
+        new Claim("CategoryName", e.Category?.CategoryName ?? "כללי")
     };
 
             var token = new JwtSecurityToken(

@@ -15,6 +15,8 @@ namespace DataContext.DTO
         public string Email { get; set; }
         public string Role { get; set; } // מנהל/עובד וכו'
         public int? CategoryId { get; set; } // אם הוא שייך למחלקה מסוימת
-        public string CategoryName { get; set; } 
+        public string CategoryName { get; set; }
+        public bool IsAviable { get; set; }
+
     }
 }
