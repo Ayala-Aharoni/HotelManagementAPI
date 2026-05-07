@@ -1,10 +1,14 @@
-﻿using Common.DTO;   
+﻿using Common.DTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json; // חשוב בשביל PostAsJsonAsync
 using System.Text;
 using System.Threading.Tasks;
-using Service.Interfaces;   
+using Service.Interfaces;
+using System.Net.Http.Json;
+
 namespace Service
 {
     public class SimiliarWordsService : ISimiliarWord
@@ -16,64 +20,59 @@ namespace Service
             _httpClient = httpClient;
         }
 
-        //public async Task<List<string>> GetSimilarWordsAsync(string word)
-        //{
-        //    try
-        //    {
-        //        // קריאת GET לכתובת החדשה בפייתון
-        //        var response = await _httpClient.GetAsync($"http://127.0.0.1:8000/synonyms/{word}");
-
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var responseJson = await response.Content.ReadAsStringAsync();
-
-        //            var result = System.Text.Json.JsonSerializer.Deserialize<SynonymResponseDTO>(responseJson,
-        //                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-        //            return result?.Synonyms ?? new List<string>();
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"[SimilarWordsService] Error: {ex.Message}");
-        //    }
-
-        //    return new List<string>();
-        //}
-        public async Task<List<string>> GetSimilarWordsAsync(string word)
+        // מימוש הפונקציה החדשה שה-Interface דורש
+        public async Task<List<PythonMatchDTO>> GetSimilarWordsFromPython(string word, List<string> allKeywords, double threshold)
         {
-            Console.WriteLine($"[Service] נסה להביא מילים דומות עבור: '{word}'...");
+            Console.WriteLine($"[Service] Asking Python for matches for: '{word}' among {allKeywords.Count} words...");
 
             try
             {
-                var response = await _httpClient.GetAsync($"http://127.0.0.1:8000/synonyms/{word}");
+                // יצירת האובייקט שיישלח כ-JSON (תואם ל-BaseModel של פייתון)
+                var requestBody = new
+                {
+                    word = word,
+                    all_keywords = allKeywords,
+                    threshold = threshold
+                };
+
+                // שליחת POST לשרת פייתון
+                var response = await _httpClient.PostAsJsonAsync("http://127.0.0.1:8000/find_similar_in_dictionary", requestBody);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var responseJson = await response.Content.ReadAsStringAsync();
+                    // קבלת התשובה (המילים הדומות והציון שלהן)
+                    var result = await response.Content.ReadFromJsonAsync<PythonResponseDTO>();
 
-                    // הדפסה של ה-JSON הגולמי שחזר מפייתון
-                    Console.WriteLine($"[Service] הצלחה! התשובה מפייתון: {responseJson}");
-
-                    var result = System.Text.Json.JsonSerializer.Deserialize<SynonymResponseDTO>(responseJson,
-                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-                    return result?.Synonyms ?? new List<string>();
+                    if (result?.Matches != null)
+                    {
+                        Console.WriteLine($"[Service] Python returned {result.Matches.Count} matches.");
+                        return result.Matches;
+                    }
                 }
                 else
                 {
-                    Console.WriteLine($"[Service] שגיאה מהשרת: {response.StatusCode}");
+                    Console.WriteLine($"[Service] Python Server Error: {response.StatusCode}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Service] תקלה בתקשורת: {ex.Message}");
+                Console.WriteLine($"[Service] Communication Exception: {ex.Message}");
             }
 
+            return new List<PythonMatchDTO>(); // מחזיר רשימה ריקה במקרה של תקלה
+        }
+
+        // הפונקציה הישנה - אפשר להשאיר או למחוק אם ה-Interface כבר לא דורש אותה
+        public async Task<List<string>> GetSimilarWordsAsync(string word)
+        {
+            // ... (הקוד הישן שלך) ...
             return new List<string>();
         }
     }
 
-   
+    // DTO פנימי או חיצוני לקבלת התשובה המלאה מפייתון
+    public class PythonResponseDTO
+    {
+        public List<PythonMatchDTO> Matches { get; set; }
+    }
 }
-

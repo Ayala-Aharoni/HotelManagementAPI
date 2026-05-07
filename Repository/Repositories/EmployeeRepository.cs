@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Repository.Entities;
+using Repository.Exception;
 using Repository.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -64,6 +65,14 @@ namespace Repository.Repositories
                 ctx.Employees.Remove(existing);
                 await ctx.Save();
             }
+        }
+        public async Task UpdateAvailabilityAsync(int id, bool isAvailable)
+        {
+            var employee = await ctx.Employees.FindAsync(id);
+            if (employee == null)
+                throw new EntityNotFoundException("Employee", id);
+            employee.IsAviable = isAvailable; 
+            await ctx.Save  ();
         }
     }
 }

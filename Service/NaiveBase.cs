@@ -16,6 +16,9 @@ namespace Service
     {
         private readonly IServiceScopeFactory _scopeFactory;
 
+
+
+
         public Dictionary<string, WordClassificationDTO> WordStatistics { get; private set; } = new();
         private int[] _totalWordsPerCategory;
         private Dictionary<int, int> _categoryIdToIndex = new();
@@ -81,12 +84,12 @@ namespace Service
                 }
 
                 // 3. טעינת המילון הסטטיסטי (מילים ושכיחויות)
-                await LoadDictionaryInternal(categories.ToList(), categoryWordRepo ,wordRepo);
+                await LoadDictionaryInternal(categories.ToList(), categoryWordRepo, wordRepo);
 
                 Console.WriteLine($"[LoadModel] SUCCESS: Model loaded with {WordStatistics.Count} words and statistical Priors.");
             }
         }
-        private async Task LoadDictionaryInternal(List<Category> categories, ICategoryWordRepository categoryWordRepo , IRepository<Word> wordRepo  )
+        private async Task LoadDictionaryInternal(List<Category> categories, ICategoryWordRepository categoryWordRepo, IRepository<Word> wordRepo)
         {
 
             //////////////////////////////
@@ -114,7 +117,7 @@ namespace Service
 
             var allLinks = await categoryWordRepo.GetAll();
             //זה בירוק בגלל החלק הלמעלה אם מורידים תלמעלה להוריד גם אותו 
-           // WordStatistics.Clear();
+            // WordStatistics.Clear();
             _vocabularySize = 0;
 
             foreach (var link in allLinks)
@@ -143,36 +146,42 @@ namespace Service
             Console.WriteLine($"[LoadDictionary] Loaded {WordStatistics.Count} unique words from DB.");
         }
 
+
         public async Task<int> PredictCategory(List<string> words)
         {
-            Console.WriteLine("\n***** STARTING PREDICTION *****");
-
-            if (_categoryLogPriors == null || _categoryLogPriors.Length == 0)
-            {
-                Console.WriteLine("[Warning] Model not loaded. Loading now...");
-                await LoadModel();
-            }
+            if (_categoryLogPriors == null) await LoadModel();
 
             double[] finalScores = new double[_numCategories];
             Array.Copy(_categoryLogPriors, finalScores, _numCategories);
 
-            var tokens = words?.Select(w => w.ToLower().Trim())
-                               .Where(w => !string.IsNullOrWhiteSpace(w)).ToList() ?? new();
+            var tokens = words?.Select(w => w.ToLower().Trim()).Where(w => !string.IsNullOrEmpty(w)).ToList() ?? new();
+            Console.WriteLine($"\n--- Analyzing {tokens.Count} tokens ---");
 
             foreach (var word in tokens)
             {
                 int[] countsForWord = null;
+
                 if (WordStatistics.TryGetValue(word, out WordClassificationDTO stats))
                 {
                     countsForWord = stats.CategoryCounts;
-                    Console.WriteLine($"[DB] Match: '{word}' -> Counts: {string.Join(",", countsForWord)}");
+                    Console.WriteLine($"[MATCH] '{word}' in DB. Counts: {string.Join(",", countsForWord)}");
                 }
                 else
                 {
+                    // שימוש מקצועי ב-ScopeFactory בתוך Singleton
                     using (var scope = _scopeFactory.CreateScope())
                     {
-                        var similarWordsService = scope.ServiceProvider.GetRequiredService<ISimiliarWord>();
-                        countsForWord = await GetSynonymCounts(word, similarWordsService);
+                        var similarService = scope.ServiceProvider.GetRequiredService<ISimiliarWord>();
+                        var allKnownWords = WordStatistics.Keys.ToList();
+
+                        Console.WriteLine($"[MISS] '{word}' not in DB. Asking Python...");
+                        var matches = await similarService.GetSimilarWordsFromPython(word, allKnownWords, 0.3);
+
+                        if (matches != null && matches.Any())
+                        {
+                            Console.WriteLine($"[PYTHON] '{word}' matches: {string.Join(", ", matches.Select(m => $"{m.Word}({m.Score:P0})"))}");
+                            countsForWord = CalculateAverageCounts(matches);
+                        }
                     }
                 }
 
@@ -189,56 +198,126 @@ namespace Service
 
             int bestIndex = 0;
             for (int i = 1; i < finalScores.Length; i++)
-            {
                 if (finalScores[i] > finalScores[bestIndex]) bestIndex = i;
-            }
 
-            // בדיקת ה-ID
             if (_indexToCategoryId.TryGetValue(bestIndex, out int winnerId))
             {
-                Console.WriteLine($"WINNER: Category ID {winnerId} (Index {bestIndex})");
+                Console.WriteLine($"--- FINAL RESULT: Category ID {winnerId} ---\n");
                 return winnerId;
             }
-
-            Console.WriteLine("WINNER: None (Mapping failed)");
             return -1;
         }
-
-        private async Task<int[]> GetSynonymCounts(string word, ISimiliarWord similarService)
+        private int[] CalculateAverageCounts(List<PythonMatchDTO> matches)
         {
-            if (_similarWordsScoresCache.TryGetValue(word, out var cached)) return cached;
-
-            Console.WriteLine($"[Synonyms] Searching for: {word}");
-            var similarWordsList = await similarService.GetSimilarWordsAsync(word);
-            int[] averageCounts = GetAverageCountsForSimilarWords(similarWordsList?.ToList());
-
-            if (averageCounts != null) _similarWordsScoresCache[word] = averageCounts;
-            return averageCounts;
-        }
-
-        public int[] GetAverageCountsForSimilarWords(List<string> similarWords)
-        {
-            if (similarWords == null || !similarWords.Any()) return null;
-
             int[] sumCounts = new int[_numCategories];
-            int matchCount = 0;
-
-            foreach (var simWord in similarWords)
+            foreach (var match in matches)
             {
-                if (WordStatistics.TryGetValue(simWord.ToLower().Trim(), out var stats))
+                if (WordStatistics.TryGetValue(match.Word, out var stats))
                 {
-                    for (int i = 0; i < _numCategories; i++) sumCounts[i] += stats.CategoryCounts[i];
-                    matchCount++;
+                    for (int i = 0; i < _numCategories; i++)
+                        sumCounts[i] += stats.CategoryCounts[i];
                 }
             }
-
-            if (matchCount > 0)
-            {
-                for (int i = 0; i < _numCategories; i++) sumCounts[i] /= matchCount;
-                return sumCounts;
-            }
-            return null;
+            Console.WriteLine($"[CALC] Aggregated counts from {matches.Count} similar words: {string.Join(",", sumCounts)}");
+            return sumCounts;
         }
+        //public async Task<int> PredictCategory(List<string> words)
+        //{
+        //    Console.WriteLine("\n***** STARTING PREDICTION *****");
+
+        //    if (_categoryLogPriors == null || _categoryLogPriors.Length == 0)
+        //    {
+        //        Console.WriteLine("[Warning] Model not loaded. Loading now...");
+        //        await LoadModel();
+        //    }
+
+        //    double[] finalScores = new double[_numCategories];
+        //    Array.Copy(_categoryLogPriors, finalScores, _numCategories);
+
+        //    var tokens = words?.Select(w => w.ToLower().Trim())
+        //                       .Where(w => !string.IsNullOrWhiteSpace(w)).ToList() ?? new();
+
+        //    foreach (var word in tokens)
+        //    {
+        //        int[] countsForWord = null;
+        //        if (WordStatistics.TryGetValue(word, out WordClassificationDTO stats))
+        //        {
+        //            countsForWord = stats.CategoryCounts;
+        //            Console.WriteLine($"[DB] Match: '{word}' -> Counts: {string.Join(",", countsForWord)}");
+        //        }
+        //        else
+        //        {
+        //            using (var scope = _scopeFactory.CreateScope())
+        //            {
+        //                var similarWordsService = scope.ServiceProvider.GetRequiredService<ISimiliarWord>();
+        //                countsForWord = await GetSynonymCounts(word, similarWordsService);
+        //            }
+        //        }
+
+        //        if (countsForWord != null)
+        //        {
+        //            for (int i = 0; i < _numCategories; i++)
+        //            {
+        //                double numerator = countsForWord[i] + 0.5;
+        //                double denominator = _totalWordsPerCategory[i] + (0.5 * _vocabularySize);
+        //                finalScores[i] += Math.Log(numerator / denominator);
+        //            }
+        //        }
+        //    }
+
+        //    int bestIndex = 0;
+        //    for (int i = 1; i < finalScores.Length; i++)
+        //    {
+        //        if (finalScores[i] > finalScores[bestIndex]) bestIndex = i;
+        //    }
+
+        //    // בדיקת ה-ID
+        //    if (_indexToCategoryId.TryGetValue(bestIndex, out int winnerId))
+        //    {
+        //        Console.WriteLine($"WINNER: Category ID {winnerId} (Index {bestIndex})");
+        //        return winnerId;
+        //    }
+
+        //    Console.WriteLine("WINNER: None (Mapping failed)");
+        //    return -1;
+        //}
+
+        //החלפתי שיטת חישוב מילים דומות !
+        //private async Task<int[]> GetSynonymCounts(string word, ISimiliarWord similarService)
+        //{
+        //    if (_similarWordsScoresCache.TryGetValue(word, out var cached)) return cached;
+
+        //    Console.WriteLine($"[Synonyms] Searching for: {word}");
+        //    var similarWordsList = await similarService.GetSimilarWordsAsync(word);
+        //    int[] averageCounts = GetAverageCountsForSimilarWords(similarWordsList?.ToList());
+
+        //    if (averageCounts != null) _similarWordsScoresCache[word] = averageCounts;
+        //    return averageCounts;
+        //}
+
+        //public int[] GetAverageCountsForSimilarWords(List<string> similarWords)
+        //{
+        //    if (similarWords == null || !similarWords.Any()) return null;
+
+        //    int[] sumCounts = new int[_numCategories];
+        //    int matchCount = 0;
+
+        //    foreach (var simWord in similarWords)
+        //    {
+        //        if (WordStatistics.TryGetValue(simWord.ToLower().Trim(), out var stats))
+        //        {
+        //            for (int i = 0; i < _numCategories; i++) sumCounts[i] += stats.CategoryCounts[i];
+        //            matchCount++;
+        //        }
+        //    }
+
+        //    if (matchCount > 0)
+        //    {
+        //        for (int i = 0; i < _numCategories; i++) sumCounts[i] /= matchCount;
+        //        return sumCounts;
+        //    }
+        //    return null;
+        //}
 
         public int GetIndex(int categoryId) => _categoryIdToIndex.TryGetValue(categoryId, out int index) ? index : -1;
 
@@ -257,10 +336,13 @@ namespace Service
             _totalWordsPerCategory[catIdx]++;
         }
 
+
         // מימוש ה-Interface שחסר לך
-        public async Task LoadDictionaryAsync(List<Category> categories, ICategoryWordRepository _categoryWordRepo, IRepository<Word> wordRepo  )
+        public async Task LoadDictionaryAsync(List<Category> categories, ICategoryWordRepository _categoryWordRepo, IRepository<Word> wordRepo)
         {
             await LoadDictionaryInternal(categories, _categoryWordRepo, wordRepo);
         }
+       
+    
     }
 }

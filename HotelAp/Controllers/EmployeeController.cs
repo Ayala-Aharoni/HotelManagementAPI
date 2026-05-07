@@ -22,7 +22,7 @@ namespace HotelAp.Controllers
             _employeeService = employeeService;
         }
 
-        [HttpGet]
+     
         //[Authorize(Roles = "Admin")]
 
         [HttpGet]
@@ -84,6 +84,26 @@ namespace HotelAp.Controllers
         {
             await _employeeService.DeleteEmployeeAsync(id);
             return NoContent();
+        }
+      
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(int id, [FromBody] EmployeeStatusUpdateDto dto)
+        {
+            // סתם בשביל הבדיקה שלך, לראות שזה מגיע
+            Console.WriteLine($"Updating status for employee {id} to {dto.ISAviavle}");
+
+            try
+            {
+                // שימי לב: אנחנו שולחים ל-Service את dto.IsAvailable 
+                // כי ה-Service עדיין מצפה לקבל בוליאני פשוט
+                await _employeeService.UpdateAvailabilityAsync(id, dto.ISAviavle);
+
+                return Ok(new { message = "Status updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }   

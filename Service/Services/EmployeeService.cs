@@ -151,6 +151,12 @@ namespace Service.Services
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+        public async Task UpdateAvailabilityAsync(int id, bool isAvailable)
+        {
+          // כאן אפשר להוסיף לוגיקה אם צריך, למשל לוודא שהעובד לא באמצע משימה
+          //לעשות כאן בדיקות ווכו!!
+            await _employeeRepository.UpdateAvailabilityAsync(id, isAvailable);
+        }
 
 
 

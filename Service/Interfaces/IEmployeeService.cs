@@ -31,7 +31,8 @@ namespace Repository.Interfaces
             Task<EmployeeDto> GetByIdAsync(int id);
             Task UpdateEmployeeAsync(int id, Employee emp);
             Task DeleteEmployeeAsync(int id);
-        
+        Task UpdateAvailabilityAsync(int id, bool isAvailable);
+
 
 
     }
