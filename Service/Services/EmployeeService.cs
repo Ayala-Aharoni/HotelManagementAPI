@@ -106,14 +106,32 @@ namespace Service.Services
             return _mapper.Map<EmployeeDto>(employee);
         }
 
-        public async Task UpdateEmployeeAsync(int id, Employee emp)
+        public async Task UpdateEmployeeAsync(int id, RegisterEmployeeDTO emp)
         {
+            // 1. שלפי מהדאטהבייס את העובד הקיים (כישות - Entity)
             var existing = await _employeeRepository.GetById(id);
-            if (existing == null)
-                throw new EntityNotFoundException("עובד", id);
 
-            //TODOO
-            await _employeeRepository.UpdateItem(id, emp);
+            if (existing == null)
+                throw new Exception($"עובד עם מזהה {id} לא נמצא");
+
+            // 2. עדכון השדות - כאן אנחנו מעבירים מה-DTO לישות
+            existing.Fullname = emp.Fullname;
+            existing.Email = emp.Email;
+
+            // זוכרת שה-Role ב-Entity הוא סטרינג? כאן המקום להמיר:
+            existing.Role = emp.Role.ToString();
+
+            existing.CategoryId = emp.CategoryId;
+
+            // עדכון סיסמה רק אם המנהל הזין אחת חדשה
+            if (!string.IsNullOrEmpty(emp.PassWord))
+            {
+                existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(emp.PassWord); // בהמשך כדאי להוסיף פה Hash!
+            }
+
+            // 3. שליחה לרפוזיטורי - שימי לב: אנחנו שולחים את existing (שהוא Employee)
+            // ולא את emp (שהוא ה-DTO). עכשיו זה יתאים בדיוק לאינטרפייס!
+            await _employeeRepository.UpdateItem(id, existing);
         }
 
         public async Task DeleteEmployeeAsync(int id)

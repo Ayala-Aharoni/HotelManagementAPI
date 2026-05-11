@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DataContext.DTO;
+using Microsoft.EntityFrameworkCore;
 using Repository.Entities;
 using Repository.Exception;
 using Repository.Interfaces;
@@ -50,8 +51,8 @@ namespace Repository.Repositories
 
             existing.Fullname = item.Fullname;
             existing.Email = item.Email;
-            existing.Role = item.Role;
-            existing.IsAviable = item.IsAviable;
+            existing.Role = item.Role.ToString();
+         //   existing.IsAviable = item.IsAviable;
 
             await ctx.Save();
             return existing;

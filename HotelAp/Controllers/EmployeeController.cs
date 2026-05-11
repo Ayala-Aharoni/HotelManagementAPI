@@ -40,7 +40,7 @@ namespace HotelAp.Controllers
             var employee = await _employeeService.GetByIdAsync(id);
             return Ok(employee);
         }
-
+        
         // [Authorize(Roles = "Admin")]
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterEmployeeDTO dto)
@@ -72,14 +72,14 @@ namespace HotelAp.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] Employee emp)
+        public async Task<IActionResult> Put(int id, [FromBody] RegisterEmployeeDTO emp)
         {
             await _employeeService.UpdateEmployeeAsync(id, emp);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+    //   [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             await _employeeService.DeleteEmployeeAsync(id);
