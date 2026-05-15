@@ -26,7 +26,7 @@ namespace HotelAp.Controllers
         }
 
 
-        // GET: api/<RequestController>
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetAll()
         {
@@ -34,7 +34,7 @@ namespace HotelAp.Controllers
             return Ok(list);
         }
 
-        // GET api/<RequestController>/5
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<ActionResult<RequestResponseDTO>> Get(int id)
         {
@@ -51,7 +51,7 @@ namespace HotelAp.Controllers
         //אלו הן 2 פונקציות שאני לא בטוחה שריך לעשות!!!!
         //לשאול משהי האם אלו דברים שאמורים להשמר בצד ריקאקט או שזה בסדר שהם יהיו פה
 
-        [Authorize] // חובה! רק מי שמחובר עם טוקן יכול להיכנס
+        [Authorize(Roles = "Employee")]
         [HttpGet("my-tasks")]
         public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetMyTasks()
         {
@@ -70,7 +70,7 @@ namespace HotelAp.Controllers
 
             return Ok(tasks);
         }
-        [Authorize]
+        [Authorize(Roles = "Employee")]
         [HttpGet("available")]
         public async Task<ActionResult<IEnumerable<RequestResponseDTO>>> GetAvailableRequests()
         {
@@ -87,9 +87,8 @@ namespace HotelAp.Controllers
         }
 
 
-        // POST api/<RequestController>
-        [HttpPost]
-    //    [Authorize(Roles = "RoomTablet")] // רק טאבלט שהוגדר יכול לשלוח בקשות
+     
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] RequestDTO Req)
         {
@@ -121,6 +120,7 @@ namespace HotelAp.Controllers
                 return BadRequest(new { Message = "שגיאה ביצירת הבקשה", Details = ex.Message });
             }
         }
+        [Authorize(Roles = "Employee")]
         [HttpPut("{id}/reassign-to-reception")]
         public async Task<IActionResult> ReassignToReception(int id)
         {
@@ -136,13 +136,8 @@ namespace HotelAp.Controllers
             }
         }
 
-
-
-
-
         // PUT api/<RequestController>/5
         [HttpPut("{id}")]
-
         public void Put(int id, [FromBody] string value)
         {
 
@@ -151,8 +146,6 @@ namespace HotelAp.Controllers
 
         [Authorize(Roles = "Employee")] //חשוב! מודא שיש לו תפקיד של עובד בטוקן כדי שיוכל לתפוס בקשות
         [HttpPost("take/{requestId}")]
-
-
         public async Task<IActionResult> TakeRequest(int requestId)
         {
             var userIdClaim = User
@@ -189,6 +182,23 @@ namespace HotelAp.Controllers
             return Ok(new { Message = "הבקשה הושלמה בהצלחה" });
         }
 
+        [Authorize(Roles = "Employee")] 
+        [HttpPut("transfer/{requestId}/{correctCategoryId}")]
+        public async Task<IActionResult> TransferRequestToCorrectCategory(int requestId, int correctCategoryId)
+        {
+            try
+            {
+                // קריאה לפונקציה שכתבת בסרוויס
+                await _requestService.TransferRequestToCorrectCategory(requestId, correctCategoryId);
+
+                return Ok(new { Message = $"הבקשה {requestId} הועברה בהצלחה לקטגוריה {correctCategoryId}" });
+            }
+            catch (Exception ex)
+            {
+                // במקרה שהבקשה לא נמצאה או שהקטגוריה לא קיימת
+                return BadRequest(new { Message = "שגיאה בהעברת הבקשה", Details = ex.Message });
+            }
+        }
 
 
         // DELETE api/<RequestController>/5

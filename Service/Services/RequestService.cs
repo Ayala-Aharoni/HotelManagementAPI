@@ -86,6 +86,22 @@ namespace Service.Services
 
         //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(tasks);
         //}
+
+        //public async Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId)
+        //{
+        //    var employeeExists = await ctx.Employees.AnyAsync(e => e.EmployeeId == employeeId);
+
+        //    if (!employeeExists)
+        //    {
+        //        throw new EntityNotFoundException("עובד", employeeId);
+        //    }
+
+        //    var requests = await ctx.Requests
+        //        .Where(r => r.EmployeeId == employeeId)
+        //        .ToListAsync();
+
+        //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
+        //}
         public async Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId)
         {
             var employeeExists = await ctx.Employees.AnyAsync(e => e.EmployeeId == employeeId);
@@ -96,27 +112,43 @@ namespace Service.Services
             }
 
             var requests = await ctx.Requests
+                .Include(r => r.Room) // <--- הוספת השורה הזו
                 .Where(r => r.EmployeeId == employeeId)
                 .ToListAsync();
 
             return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
         }
 
+        //public async Task<IEnumerable<RequestResponseDTO>> GetAvailableRequestsByCategory(int categoryId)
+        //{
+        //    // 1. בדיקה אופציונלית אם הקטגוריה קיימת (דומה לבדיקת העובד שלך)
+        //    var categoryExists = await ctx.Categories.AnyAsync(c => c.CategoryId == categoryId);
+        //    if (!categoryExists)
+        //    {
+        //        throw new EntityNotFoundException("קטגוריה", categoryId);
+        //    }
+
+        //    // 2. שליפת הבקשות: סטטוס NEW וגם שייכות לקטגוריה
+        //    var requests = await ctx.Requests
+        //        .Where(r => r.Status == RequestStatus.New && r.CategoryId == categoryId)
+        //        .ToListAsync();
+
+        //    // 3. מיפוי ל-DTO והחזרה
+        //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
+        //}
         public async Task<IEnumerable<RequestResponseDTO>> GetAvailableRequestsByCategory(int categoryId)
         {
-            // 1. בדיקה אופציונלית אם הקטגוריה קיימת (דומה לבדיקת העובד שלך)
             var categoryExists = await ctx.Categories.AnyAsync(c => c.CategoryId == categoryId);
             if (!categoryExists)
             {
                 throw new EntityNotFoundException("קטגוריה", categoryId);
             }
 
-            // 2. שליפת הבקשות: סטטוס NEW וגם שייכות לקטגוריה
             var requests = await ctx.Requests
+                .Include(r => r.Room) // <--- הוספת השורה הזו
                 .Where(r => r.Status == RequestStatus.New && r.CategoryId == categoryId)
                 .ToListAsync();
 
-            // 3. מיפוי ל-DTO והחזרה
             return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
         }
 

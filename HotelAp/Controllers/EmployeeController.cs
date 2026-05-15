@@ -23,8 +23,7 @@ namespace HotelAp.Controllers
         }
 
      
-        //[Authorize(Roles = "Admin")]
-
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<EmployeeDto>>> Get()
         {
@@ -33,6 +32,7 @@ namespace HotelAp.Controllers
             return Ok(employees);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<ActionResult<EmployeeDto>> Get(int id)
         {
@@ -41,7 +41,7 @@ namespace HotelAp.Controllers
             return Ok(employee);
         }
         
-        // [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterEmployeeDTO dto)
         {
@@ -71,6 +71,7 @@ namespace HotelAp.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] RegisterEmployeeDTO emp)
         {
@@ -78,14 +79,15 @@ namespace HotelAp.Controllers
             return NoContent();
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-    //   [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             await _employeeService.DeleteEmployeeAsync(id);
             return NoContent();
         }
-      
+
+        [Authorize(Roles = "Employee")]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] EmployeeStatusUpdateDto dto)
         {

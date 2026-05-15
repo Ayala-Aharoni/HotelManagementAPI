@@ -20,9 +20,8 @@ namespace Repository.Repositories
 
         public async Task<List<Room>> GetAll()
         {
-            return await _ctx.Rooms.ToListAsync();  
+            return await _ctx.Rooms.ToListAsync();
         }
-
         public async Task<Room> GetById(int id)
         {
             return await _ctx.Rooms.FirstOrDefaultAsync(r => r.Id == id);

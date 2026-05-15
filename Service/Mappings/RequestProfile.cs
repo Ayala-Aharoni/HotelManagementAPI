@@ -23,12 +23,15 @@ namespace Service.Mappings
 
 
 
-      
+
             CreateMap<Request, RequestResponseDTO>()
-                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.CategoryName : "ללא קטגוריה"))
-                .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Fullname : "טרם שובץ"))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+     .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.CategoryName : "ללא קטגוריה"))
+     .ForMember(dest => dest.EmployeeName, opt => opt.MapFrom(src => src.Employee != null ? src.Employee.Fullname : "טרם שובץ"))
+     .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+     // השורה הקריטית שחסרה לך:
+     .ForMember(dest => dest.RoomNumber, opt => opt.MapFrom(src => src.Room != null ? src.Room.RoomNumber : "ללא חדר"));
         }
+
 
 
 

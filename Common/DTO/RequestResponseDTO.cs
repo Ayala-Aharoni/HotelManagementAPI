@@ -14,5 +14,6 @@ namespace Common.DTO
         public string Status { get; set; }      // המילה "New" במקום המספר 0
         public string EmployeeName { get; set; } // רק השם של העובד שטיפל
         public DateTime CreatedAt { get; set; }
+        public string RoomNumber { get; set; } // השדה הקריטי שצריך להוסיף
     }
 }

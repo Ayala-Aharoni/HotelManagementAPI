@@ -9,7 +9,8 @@ namespace Common.DTO
     public class RequestDTO
     {
         public string Description { get; set; }
-     
+        public string RoomNumber { get; set; }
+
 
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Common;
+using Common.DTO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,5 +11,7 @@ namespace Service.Interfaces
     public interface IRoomService
     {
         Task<string> SetupRoomAsync(RoomDTO R);
+        Task<AddRoomDTO> AddRoomAsync(AddRoomDTO roomDto);
+        Task<IEnumerable<GetRoomDTO>> GetAllRoomsAsync();
     }
 }

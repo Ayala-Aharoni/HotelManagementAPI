@@ -1,4 +1,5 @@
 ﻿using DataContext.DTO;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Repository.Entities;
 using Repository.Interfaces;
@@ -20,14 +21,14 @@ namespace HotelAp.Controllers
             _categoryService = categoryService;
         }
 
-        [HttpGet]
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CategoryDTO>>> Get()
         {
             var categories = await _categoryService.GetAllAsync();
             return Ok(categories); 
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<ActionResult<CategoryDTO>> Get(int id)
         {
@@ -35,6 +36,7 @@ namespace HotelAp.Controllers
             return Ok(category);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("AddCategory")] // עדיף להשאיר רק נתיב אחד כדי למנוע בלבול
         public async Task<IActionResult> AddCategory([FromBody] CategoryDTO dto)
         {
@@ -50,6 +52,7 @@ namespace HotelAp.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             try
