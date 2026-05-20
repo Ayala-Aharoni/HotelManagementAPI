@@ -28,8 +28,6 @@ namespace Service.Services
         private readonly INaiveBase _naiveBase; //עשיתי זאת רק לבדיקה!!!!!!!!!!!!!!!!!!!!! למחוק אחרי שווידאתי שזה עובד!!
         private readonly IHubContext<RequestHub> _hubContext;
         private readonly IMapper _mapper;
-
-      
         private static readonly ConcurrentDictionary<int, List<string>> _analyzedWordsCache = new();
 
         public RequestService(IRequestRepository requestRepository, Icontext ctx,IAlgorithmcs algorithmcs, INaiveBase naiveBase , IHubContext<RequestHub> hubContext , IMapper mapper, IRepository<Category> categoryRepository)
@@ -46,62 +44,16 @@ namespace Service.Services
         {
 
             var requests = await _requestRepository.GetAll();
-
             return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
         }
 
         public async Task<RequestResponseDTO> GetById(int id)
         {
             var request = await _requestRepository.GetById(id);
-
             if (request == null)
                 throw new EntityNotFoundException("בקשה", id);  
             return _mapper.Map<RequestResponseDTO>(request);
         }
-
-        //public async Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId)
-        //{
-        //    var employeeExists = await ctx.Employees.AnyAsync(e => e.EmployeeId == employeeId);
-
-        //    if (!employeeExists)
-        //    {
-        //        throw new EntityNotFoundException("עובד", employeeId);
-        //    }
-
-        //    var requests = await ctx.Requests
-        //        .Where(r => r.EmployeeId == employeeId)
-        //        .ToListAsync();
-
-        //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
-        //}
-
-
-        //זה לשאוללל את המורה !!!!
-        //public async Task<IEnumerable<RequestResponseDTO>> GetMyInProgressTasks(int employeeId)
-        //{
-        //    // סינון ישירות בשאילתה מול ה-DB - הכי מהיר שיש!
-        //    var tasks = await ctx.Requests
-        //        .Where(r => r.EmployeeId == employeeId && r.Status == RequestStatus.InProgress)
-        //        .ToListAsync();
-
-        //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(tasks);
-        //}
-
-        //public async Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId)
-        //{
-        //    var employeeExists = await ctx.Employees.AnyAsync(e => e.EmployeeId == employeeId);
-
-        //    if (!employeeExists)
-        //    {
-        //        throw new EntityNotFoundException("עובד", employeeId);
-        //    }
-
-        //    var requests = await ctx.Requests
-        //        .Where(r => r.EmployeeId == employeeId)
-        //        .ToListAsync();
-
-        //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
-        //}
         public async Task<IEnumerable<RequestResponseDTO>> GetRequestsByEmployee(int employeeId)
         {
             var employeeExists = await ctx.Employees.AnyAsync(e => e.EmployeeId == employeeId);
@@ -110,32 +62,12 @@ namespace Service.Services
             {
                 throw new EntityNotFoundException("עובד", employeeId);
             }
-
             var requests = await ctx.Requests
-                .Include(r => r.Room) // <--- הוספת השורה הזו
+                .Include(r => r.Room) 
                 .Where(r => r.EmployeeId == employeeId)
                 .ToListAsync();
-
             return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
         }
-
-        //public async Task<IEnumerable<RequestResponseDTO>> GetAvailableRequestsByCategory(int categoryId)
-        //{
-        //    // 1. בדיקה אופציונלית אם הקטגוריה קיימת (דומה לבדיקת העובד שלך)
-        //    var categoryExists = await ctx.Categories.AnyAsync(c => c.CategoryId == categoryId);
-        //    if (!categoryExists)
-        //    {
-        //        throw new EntityNotFoundException("קטגוריה", categoryId);
-        //    }
-
-        //    // 2. שליפת הבקשות: סטטוס NEW וגם שייכות לקטגוריה
-        //    var requests = await ctx.Requests
-        //        .Where(r => r.Status == RequestStatus.New && r.CategoryId == categoryId)
-        //        .ToListAsync();
-
-        //    // 3. מיפוי ל-DTO והחזרה
-        //    return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
-        //}
         public async Task<IEnumerable<RequestResponseDTO>> GetAvailableRequestsByCategory(int categoryId)
         {
             var categoryExists = await ctx.Categories.AnyAsync(c => c.CategoryId == categoryId);
@@ -151,26 +83,15 @@ namespace Service.Services
 
             return _mapper.Map<IEnumerable<RequestResponseDTO>>(requests);
         }
-
-
         public async Task Delete(int id)
         {
-            // אפשר להוסיף כאן בדיקה: למשל, האם מותר למחוק בקשה שכבר הושלמה?
             var request = await _requestRepository.GetById(id);
             if (request == null)
             {
                 throw new EntityNotFoundException("בקשה", id);
             }
-
             await _requestRepository.DeleteItem(id);
         }
-
-       
-
-
-        //פפה אני מזמנת את כל האלגוריתמים או לא?? לשאול ??
-        //כאילו מבחינתי זה אמור ליצור BEW REQUEST עם קטגוריה שתחזור לי מכל הפונקציות שאזמו
-        //createRequest
         public async Task CreateRequest(RequestDTO RequestDTO, int roomId)
         {
             var result = await _algorithmics.AnalisisRequest(RequestDTO.Description);
@@ -227,37 +148,23 @@ namespace Service.Services
             //
 
         }
-        // הוסיפי את ה-ID כפרמטר לפונקציה (הוא יגיע מה-Controller)
-
-
-
-        //זו הפונקציה שאם זה לא יסתווג בצורה נכונה זה עובר לקבלה 
-        //!!!!!!!!!!!!!!! לשנות את זה לגבי השליפה זה מיותר לשלוף את כל הקטגוריות ואז רק שם לעשות שליפה של בי שם 
+      
         public async Task ReassignToReception(int requestId)
         {
-            // 1. שליפת הבקשה
             var request = await _requestRepository.GetById(requestId);
             if (request == null) throw new Exception("Request not found");
-
-            // שומרים את ה-ID הישן כדי שנדע את מי "להעניש" אחר כך
             int wrongCategoryId = request.CategoryId;
 
-            // 2. שליפה של קטגוריית "קבלה"
             var allCategories = await _categoryRepository.GetAll();
             var receptionCategory = allCategories.FirstOrDefault(c => c.CategoryName == "Reception");
-
             if (receptionCategory == null)
             {
-                throw new Exception("שגיאת מערכת: קטגוריית קבלה לא נמצאה");
+                throw new EntityNotFoundException("קטגוריה", "Reception");
             }
-
             int receptionId = receptionCategory.CategoryId;
-
-            // 3. עדכון הבקשה ב-DB
             request.CategoryId = receptionId;
             request.EmployeeId = null;
             request.Status = RequestStatus.New;
-
             await _requestRepository.UpdateItem(requestId, request);
 
             // 4. SignalR - עדכון בזמן אמת לקבלה
@@ -348,7 +255,6 @@ namespace Service.Services
             }
         }
 
-        //פונקציה שפקיד בקבלה מסווג באופן ידני את הבקשה למקום המתאים 
         public async Task TransferRequestToCorrectCategory(int requestId, int correctCategoryId)
         {
             // 1. שליפת הבקשה הנוכחית
@@ -368,23 +274,31 @@ namespace Service.Services
             // קריאה לפונקציית ה-UpdateItem שלך - כאן השינוי נשמר סופית ב-DB
             await _requestRepository.UpdateItem(requestId, request);
 
+            // =========================================================================
+            // 🔥 תיקון: שליפת מספר החדר ובניית הכותרת כדי שה-Frontend לא יתעלם מההודעה
+            // =========================================================================
+            var roomNumber = await ctx.Rooms
+                .Where(r => r.Id == request.RoomId)
+                .Select(r => r.RoomNumber)
+                .FirstOrDefaultAsync();
+
             // 4. SignalR - עדכון הממשק
 
             // מעיפים מהמסך של הקבלה (הקבוצה הדינמית)
             await _hubContext.Clients.Group(reception.CategoryId.ToString())
                 .SendAsync("RemoveRequestFromUI", requestId);
 
-            // שולחים למסך של המחלקה הנכונה
+            // שולחים למסך של המחלקה הנכונה עם האובייקט המלא!
             var notification = _mapper.Map<NotificationDTO>(request);
+            notification.RoomNumber = roomNumber ?? "Unknown"; // הצבה ידנית של החדר
+            notification.Title = $"בקשה חדשה מחדר {roomNumber}"; // הצבה ידנית של הכותרת
+
             await _hubContext.Clients.Group(correctCategoryId.ToString())
                 .SendAsync("ReceiveNotification", notification);
 
             Console.WriteLine($"[FLOW] Request {requestId} was transferred by Reception to Category {correctCategoryId}");
         }
-        public async Task Update(int id, RequestDTO requestDto)
-        {
-           //TODOOOOOOO!!
-        }
+      
 
     }
 }

@@ -33,99 +33,63 @@ namespace Service.Services
 
         public async Task<AddRoomDTO> AddRoomAsync(AddRoomDTO roomDto)
         {
-            // 1. וולידציה בסיסית
-            if (string.IsNullOrWhiteSpace(roomDto.RoomNumber))
-            {
-                throw new AppException("מספר חדר הוא שדה חובה", HttpStatusCode.BadRequest);
-            }
-
-            // 2. בדיקה האם החדר כבר קיים במערכת
+        
             var existingRoom = await _roomRepository.GetByRoomNumberAsync(roomDto.RoomNumber);
             if (existingRoom != null)
             {
                 throw new AppException($"חדר מספר {roomDto.RoomNumber} כבר קיים במערכת", HttpStatusCode.Conflict);
             }
-
-            // 3. מיפוי מ-DTO לישות (Entity)
             var roomEntity = new Room
             {
                 RoomNumber = roomDto.RoomNumber,
-                IsTabletActive = false // חדר חדש מגיע כברירת מחדל לא פעיל
+                IsTabletActive = false 
             };
-
-            // 4. קריאה לרפוסיטורי לשמירה
             var createdRoom = await _roomRepository.AddItem(roomEntity);
 
-            // 5. החזרת DTO חזרה לקונטרולר
             return new AddRoomDTO
             {
-               
                 RoomNumber = createdRoom.RoomNumber
             };
         }
 
         public async Task<IEnumerable<GetRoomDTO>> GetAllRoomsAsync()
         {
-            // שליפת החדרים מהרפוזיטורי
             var rooms = await _roomRepository.GetAll();
-
-            // המרה (Mapping) ל-DTO החדש שיצרת
             return rooms.Select(r => new GetRoomDTO
             {
                 Id = r.Id,
                 RoomNumber = r.RoomNumber,
-                IsTabletActive = r.IsTabletActive // וודאי שקיים שדה כזה ב-Entity שלך
+                IsTabletActive = r.IsTabletActive
             }).ToList();
         }
         public async Task<string> SetupRoomAsync(RoomDTO R)
         {
-            // 1. וולידציה בסיסית - בדיקה שכל השדות הגיעו
-            if (R == null || string.IsNullOrWhiteSpace(R.RoomNumber) ||
-                string.IsNullOrWhiteSpace(R.AdminEmail) || string.IsNullOrWhiteSpace(R.AdminPassword))
+            if (R == null)
             {
-                throw new AppException("חובה להזין מספר חדר ופרטי מנהל תקינים", HttpStatusCode.BadRequest);
+                throw new AppException("נתוני הגדרת החדר לא התקבלו.", HttpStatusCode.BadRequest);
             }
 
-            // 2. אימות המנהל - כאן אנחנו "חוזרים" על קוד הלוגין בצורה ישירה
+          
             var admin = await _employeeRepository.GetByEmailAsync(R.AdminEmail);
-
-            // בדיקה שהמשתמש קיים, שהוא מנהל ושהסיסמה נכונה
-            if (/*admin == null || admin.Role != "Admin" ||*/ !BCrypt.Net.BCrypt.Verify(R.AdminPassword, admin.PasswordHash))
+            if (admin == null || !BCrypt.Net.BCrypt.Verify(R.AdminPassword, admin.PasswordHash))
             {
-                throw new AppException("אימות  נכשל - אין הרשאה לבצע הגדרת טאבלט", HttpStatusCode.Unauthorized);
+                throw new AppException("אימות נכשל - אין הרשאה לבצע הגדרת טאבלט", HttpStatusCode.Unauthorized);
             }
-
-            // 3. חיפוש החדר במערכת
             var room = await _roomRepository.GetByRoomNumberAsync(R.RoomNumber);
-
             if (room == null)
             {
-                throw new AppException($"חדר מספר {R.RoomNumber} אינו רשום במערכת המלון", HttpStatusCode.NotFound);
+                throw new EntityNotFoundException("חדר", R.RoomNumber);
             }
 
             if (room.IsTabletActive)
             {
                 throw new AppException($"חדר מספר {R.RoomNumber} כבר מחובר לטאבלט פעיל. יש לנתק את הטאבלט הקודם לפני חיבור חדש.", HttpStatusCode.Conflict);
             }
-            // 4. עדכון הסטטוס ויצירת הטוקן
-            try
-            {
-                room.IsTabletActive = true;
-                await _roomRepository.UpdateItem(room.Id, room);
-
-                // יצירת הטוקן המוגבל לחדר (הזהות של הטאבלט)
-                // כאן תוודאי שפונקציית GenerateToken יודעת לקבל אובייקט Room 
-                // ולהכניס את מספר החדר לתוך ה-Claims
-                var token = GenerateToken(room);
-                return token;
-            }
-            catch (Exception ex)
-            {
-                // במקום הודעה כללית, נשלח את ההודעה של ה-Exception המקורי
-                throw new AppException($"שגיאה בשרת: {ex.Message}", HttpStatusCode.InternalServerError);
-            }
+            room.IsTabletActive = true;
+            await _roomRepository.UpdateItem(room.Id, room);
+            var token = GenerateToken(room);
+            return token;
         }
-
 
         private string GenerateToken(Room room)
         {

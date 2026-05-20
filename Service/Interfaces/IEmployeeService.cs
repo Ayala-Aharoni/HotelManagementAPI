@@ -29,7 +29,7 @@ namespace Repository.Interfaces
             Task<IEnumerable<EmployeeDto>> GetAllEmployeesAsync();
 
             Task<EmployeeDto> GetByIdAsync(int id);
-            Task UpdateEmployeeAsync(int id, RegisterEmployeeDTO emp);
+            Task UpdateEmployeeAsync(int id, UpDateemploeeDTO    emp);
             Task DeleteEmployeeAsync(int id);
         Task UpdateAvailabilityAsync(int id, bool isAvailable);
 

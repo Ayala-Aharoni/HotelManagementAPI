@@ -22,12 +22,10 @@ namespace HotelAp.Controllers
             _employeeService = employeeService;
         }
 
-     
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<EmployeeDto>>> Get()
         {
-            // הסרוויס כבר מחזיר רשימת DTOs, אז פשוט מעבירים אותה הלאה
             var employees = await _employeeService.GetAllEmployeesAsync();
             return Ok(employees);
         }
@@ -36,7 +34,6 @@ namespace HotelAp.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<EmployeeDto>> Get(int id)
         {
-            // אם העובד לא קיים, הסרוויס יזרוק Exception והמערכת תחזיר 404 אוטומטית
             var employee = await _employeeService.GetByIdAsync(id);
             return Ok(employee);
         }
@@ -45,18 +42,9 @@ namespace HotelAp.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterEmployeeDTO dto)
         {
-            try
-            {
                 var token = await _employeeService.Register(dto);
-                // אנחנו מחזירים אובייקט עם שדה טוקן כדי שהפרונט יבין בקלות
                 return Ok(new { token });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
         }
-
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginEmployeeDTO dto)
         {
@@ -70,10 +58,9 @@ namespace HotelAp.Controllers
                 return Unauthorized(new { message = ex.Message });
             }
         }
-
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, [FromBody] RegisterEmployeeDTO emp)
+        public async Task<IActionResult> Put(int id, [FromBody] UpDateemploeeDTO emp)
         {
             await _employeeService.UpdateEmployeeAsync(id, emp);
             return NoContent();
@@ -86,26 +73,12 @@ namespace HotelAp.Controllers
             await _employeeService.DeleteEmployeeAsync(id);
             return NoContent();
         }
-
         [Authorize(Roles = "Employee")]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] EmployeeStatusUpdateDto dto)
         {
-            // סתם בשביל הבדיקה שלך, לראות שזה מגיע
-            Console.WriteLine($"Updating status for employee {id} to {dto.ISAviavle}");
-
-            try
-            {
-                // שימי לב: אנחנו שולחים ל-Service את dto.IsAvailable 
-                // כי ה-Service עדיין מצפה לקבל בוליאני פשוט
                 await _employeeService.UpdateAvailabilityAsync(id, dto.ISAviavle);
-
                 return Ok(new { message = "Status updated successfully" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
         }
     }
 }   

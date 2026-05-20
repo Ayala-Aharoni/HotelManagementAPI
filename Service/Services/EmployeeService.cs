@@ -26,9 +26,6 @@ namespace Service.Services
         private readonly IRepository<Category> _categoryRepository;
         private readonly IMapper _mapper;     
         private readonly IConfiguration _configuration;
-
-
-
         public EmployeeService(IEmployeeRepository employeeRepository, IRepository<Category> categoryRepository, IConfiguration configuration ,IMapper mapper)
         {
             _employeeRepository = employeeRepository;
@@ -36,111 +33,70 @@ namespace Service.Services
             _configuration = configuration;
             _mapper = mapper;
         }
-
-        //עשיתי כאן ללא ההרשאות שרק מנהל יכול לעשות זאת 
+        
         public async Task<string> Register(RegisterEmployeeDTO R)
         {
-            // 1. בדיקה אם המייל כבר תפוס
+            
             var existingEmployee = await _employeeRepository.GetByEmailAsync(R.Email);
             if (existingEmployee != null)
             {
                 throw new AppException.UserAlreadyExistsException();
             }
-
-            // 2. בדיקה שהקטגוריה קיימת - שימוש בשליפה לפי ID
-            // 2. בדיקה שהקטגוריה קיימת
-            // טיפ: עדיף להשתמש ב-GetById ישיר ב-Repository אם יש לך, במקום להביא את כל הרשימה
             var category = (await _categoryRepository.GetAll())
                             .FirstOrDefault(c => c.CategoryId == R.CategoryId);
-
-           
             if (category == null)
             {
-                throw new AppException.NotFoundException("הקטגוריה שנבחרה לא נמצאה במערכת");
+                throw new EntityNotFoundException("קטגוריה", R.CategoryId);
             }
-
-            // 3. מיפוי והצפנה
             var employee = _mapper.Map<Employee>(R);
             employee.PasswordHash = BCrypt.Net.BCrypt.HashPassword(R.PassWord);
             employee.CategoryId = category.CategoryId;
-
-            // 4. שמירה
             await _employeeRepository.AddItem(employee);
-
-            // 5. יצירת טוקן
             return GenerateToken(employee);
-        }        //עשיתי גאן עם זרואו זרקתי כאילו אקסשים האם ככה?
+        }       
         public async Task<string> Login(LoginEmployeeDTO l)
         {
-
             var employee = await _employeeRepository.GetByEmailAsync(l.Email);
-
             if (employee == null || !BCrypt.Net.BCrypt.Verify(l.Password, employee.PasswordHash))
                 throw new AppException.AuthException();
-
-
-
             var token = GenerateToken(employee);
-
            return token;
-
-
         }
-
-
         public async Task<IEnumerable<EmployeeDto>> GetAllEmployeesAsync()
         {
-         
             var employees = await _employeeRepository.GetAll();
-
             return _mapper.Map<IEnumerable<EmployeeDto>>(employees);
         }
-
         public async Task<EmployeeDto> GetByIdAsync(int id)
         {
             var employee = await _employeeRepository.GetById(id);
-
             if (employee == null)
                 throw new EntityNotFoundException("עובד", id);
-
             return _mapper.Map<EmployeeDto>(employee);
         }
-
-        public async Task UpdateEmployeeAsync(int id, RegisterEmployeeDTO emp)
+        public async Task UpdateEmployeeAsync(int id, UpDateemploeeDTO emp)
         {
-            // 1. שלפי מהדאטהבייס את העובד הקיים (כישות - Entity)
+           
             var existing = await _employeeRepository.GetById(id);
-
             if (existing == null)
                 throw new Exception($"עובד עם מזהה {id} לא נמצא");
-
-            // 2. עדכון השדות - כאן אנחנו מעבירים מה-DTO לישות
             existing.Fullname = emp.Fullname;
             existing.Email = emp.Email;
-
-            // זוכרת שה-Role ב-Entity הוא סטרינג? כאן המקום להמיר:
             existing.Role = emp.Role.ToString();
-
             existing.CategoryId = emp.CategoryId;
 
-            // עדכון סיסמה רק אם המנהל הזין אחת חדשה
             if (!string.IsNullOrEmpty(emp.PassWord))
             {
                 existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(emp.PassWord); // בהמשך כדאי להוסיף פה Hash!
             }
-
-            // 3. שליחה לרפוזיטורי - שימי לב: אנחנו שולחים את existing (שהוא Employee)
-            // ולא את emp (שהוא ה-DTO). עכשיו זה יתאים בדיוק לאינטרפייס!
             await _employeeRepository.UpdateItem(id, existing);
         }
 
         public async Task DeleteEmployeeAsync(int id)
         {
-            // בדיקה שהעובד קיים לפני מחיקה
             var existing = await _employeeRepository.GetById(id);
             if (existing == null)
                 throw new EntityNotFoundException("עובד", id);
-
             await _employeeRepository.DeleteItem(id);
         }
 
@@ -148,7 +104,6 @@ namespace Service.Services
         {
             var secret = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var credentials = new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
-
             var claims = new[]
             {
         new Claim(ClaimTypes.NameIdentifier, e.EmployeeId.ToString()),
@@ -166,19 +121,17 @@ namespace Service.Services
                 expires: DateTime.UtcNow.AddMinutes(30),
                 signingCredentials: credentials
             );
-
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
         public async Task UpdateAvailabilityAsync(int id, bool isAvailable)
         {
-          // כאן אפשר להוסיף לוגיקה אם צריך, למשל לוודא שהעובד לא באמצע משימה
-          //לעשות כאן בדיקות ווכו!!
+            var employee = await _employeeRepository.GetById(id);
+            if (employee == null)
+            {
+                throw new EntityNotFoundException("עובד", id);
+            }
             await _employeeRepository.UpdateAvailabilityAsync(id, isAvailable);
         }
-
-
-
-
 
     }
 }

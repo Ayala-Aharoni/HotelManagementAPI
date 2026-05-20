@@ -118,7 +118,8 @@ namespace Service
             var allLinks = await categoryWordRepo.GetAll();
             //זה בירוק בגלל החלק הלמעלה אם מורידים תלמעלה להוריד גם אותו 
             // WordStatistics.Clear();
-            _vocabularySize = 0;
+
+           // _vocabularySize = 0; בגלל שהוא סיוג לי לקטגוריות עם הכי פחות מילים 
 
             foreach (var link in allLinks)
             {
@@ -210,15 +211,30 @@ namespace Service
         private int[] CalculateAverageCounts(List<PythonMatchDTO> matches)
         {
             int[] sumCounts = new int[_numCategories];
+            int matchCount = 0;
+
             foreach (var match in matches)
             {
                 if (WordStatistics.TryGetValue(match.Word, out var stats))
                 {
                     for (int i = 0; i < _numCategories; i++)
+                    {
                         sumCounts[i] += stats.CategoryCounts[i];
+                    }
+                    matchCount++; // סופרים כמה מילים מתוך הרשימה באמת קיימות אצלנו במילון
                 }
             }
-            Console.WriteLine($"[CALC] Aggregated counts from {matches.Count} similar words: {string.Join(",", sumCounts)}");
+
+            // התיקון המרכזי: אם מצאנו מילים, מחלקים את הסכום בכמות המילים כדי לקבל ממוצע אמיתי
+            if (matchCount > 0)
+            {
+                for (int i = 0; i < _numCategories; i++)
+                {
+                    sumCounts[i] /= matchCount;
+                }
+            }
+
+            Console.WriteLine($"[CALC] Aggregated average counts from {matchCount} matched words: {string.Join(",", sumCounts)}");
             return sumCounts;
         }
         //public async Task<int> PredictCategory(List<string> words)
