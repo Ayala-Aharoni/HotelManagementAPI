@@ -18,11 +18,11 @@ namespace Service.Services
             {
                _wordRepository= wordRepository;
             }
-        public async Task<Word> AddWordAsync(WordDTO dto)
-        {         
-            var allWords = await _wordRepository.GetAll();
-            var existing = allWords.FirstOrDefault(w => w.Text.ToLower() == dto.Text.ToLower());
 
+        public async Task<Word> AddWordAsync(string wordText)
+        {
+            var allWords = await _wordRepository.GetAll();
+            var existing = allWords.FirstOrDefault(w => w.Text.ToLower() == wordText.ToLower());
             if (existing != null)
             {
                 return existing;
@@ -30,9 +30,8 @@ namespace Service.Services
 
             var word = new Word
             {
-                Text = dto.Text
+                Text = wordText
             };
-
             return await _wordRepository.AddItem(word);
         }
 

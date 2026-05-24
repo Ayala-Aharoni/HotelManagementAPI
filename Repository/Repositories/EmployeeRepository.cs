@@ -48,12 +48,10 @@ namespace Repository.Repositories
         {
             var existing = await ctx.Employees.FindAsync(id);
             if (existing == null) return null;
-
             existing.Fullname = item.Fullname;
             existing.Email = item.Email;
             existing.Role = item.Role.ToString();
          //   existing.IsAviable = item.IsAviable;
-
             await ctx.Save();
             return existing;
         }

@@ -2,6 +2,7 @@
 using Repository.Entities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Service.Interfaces
 {
@@ -15,7 +16,8 @@ namespace Service.Interfaces
         void AddNewWordToDictinary(string wordText, int categoryId, int wordId);
 
         // חשיפת המילון לקריאה בלבד (אם צריך להציג סטטיסטיקות)
-        Dictionary<string, WordClassificationDTO> WordStatistics { get; }
+        ConcurrentDictionary<string, WordClassificationDTO> WordStatistics { get; }
+   //     Dictionary<string, WordClassificationDTO> WordStatistics { get; }
 
         // פונקציית עזר לתרגום ID לאינדקס (אם היא בשימוש מחוץ לקלאס)
         int GetIndex(int categoryId);

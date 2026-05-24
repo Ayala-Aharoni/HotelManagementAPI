@@ -10,7 +10,6 @@ namespace Repository.Repositories
     public class CategoryWordRepository : ICategoryWordRepository
     {
         private readonly Icontext ctx;
-        //לא לשכוחחחחח לתקןןן פהה אתתת כלללל הפנוקציותת!! עשיתי רק בינתים
         public CategoryWordRepository(Icontext context)
         {
             ctx = context;
@@ -44,11 +43,9 @@ namespace Repository.Repositories
             var existing = await ctx.CategoryWords.FindAsync(id);
             if (existing == null)
                 return null;
-
             existing.CategoryId = item.CategoryId;
             existing.WordId = item.WordId;
             existing.Frequency = item.Frequency;
-
             await ctx.Save();
             return existing;
         }
@@ -66,7 +63,6 @@ namespace Repository.Repositories
 
         public async Task IncrementFrequency(string wordText, int categoryId)
         {
-
             var record = await ctx.CategoryWords
          .FirstOrDefaultAsync(cw => cw.Word.Text.ToLower() == wordText.ToLower().Trim()
                                 && cw.CategoryId == categoryId);
@@ -86,15 +82,12 @@ namespace Repository.Repositories
 
             if (record != null)
             {
-                // אנחנו מפחיתים רק אם התדר גבוה מ-1
                 if (record.Frequency > 1)
                 {
                     record.Frequency--;
                 }
                 else
                 {
-                    // אופציונלי: אם הגענו ל-1 והעובד עדיין אומר שזה "לא קשור", 
-                    // אולי כדאי אפילו למחוק את הקשר לגמרי
                     ctx.CategoryWords.Remove(record);
                 }
 

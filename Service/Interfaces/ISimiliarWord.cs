@@ -10,6 +10,6 @@ namespace Service.Interfaces
     public interface ISimiliarWord
     {
         //Task<List<string>> GetSimilarWordsAsync(string word);
-        Task<List<PythonMatchDTO>> GetSimilarWordsFromPython(string word, List<string> allKeywords, double threshold);
+      Task<Dictionary<string, List<PythonMatchDTO>>> GetSimilarWordsFromPython(List<string> words, List<string> allKeywords, double threshold);
     }
 }

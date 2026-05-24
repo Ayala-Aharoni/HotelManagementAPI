@@ -7,16 +7,13 @@ using System.Threading.Tasks;
 using System.Net;
 namespace Repository.Exception
 {
-    // מחלקה ראשונה: לטיפול במקרים שבהם משהו חסר
     public class EntityNotFoundException : AppException
     {
         public EntityNotFoundException(string entityName, object key)
             : base($"{entityName} עם המזהה {key} לא נמצא במערכת", HttpStatusCode.NotFound)
-        {
-        }
+        { }
+        
     }
-
-    // מחלקה שנייה: לטיפול בכפילויות
     public class EntityAlreadyExistsException : AppException
     {
         public EntityAlreadyExistsException(string entityName, string detail)

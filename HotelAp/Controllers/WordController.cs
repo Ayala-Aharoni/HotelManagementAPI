@@ -32,7 +32,7 @@ namespace HotelAp.Controllers
         }
 
         [HttpPost("AddWord")]
-        public async Task<IActionResult> AddWord([FromBody] WordDTO dto)
+        public async Task<IActionResult> AddWord([FromBody] string dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);

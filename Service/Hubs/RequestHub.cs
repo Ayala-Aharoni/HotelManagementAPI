@@ -9,7 +9,6 @@ namespace Service.Hubs
 {
     public class RequestHub : Hub   
     {
-        //זה בעצם ההתחברות לקבוצה מסוימת של קטגוריה, כל עובד שיתחבר לקבוצה הזו יוכל לקבל עדכונים על בקשות שקשורות לקטגוריה הזו  
         public async Task JoinCategoryGroup(int categoryId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, categoryId.ToString());

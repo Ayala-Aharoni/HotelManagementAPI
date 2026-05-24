@@ -27,17 +27,21 @@ namespace Service
             // --- המודל של ה-AI: הופך ל-Singleton (חי לנצח בזיכרון) ---
             services.AddSingleton<INaiveBase, NaiveBase>();
 
+
+
+
+            services.AddHttpClient<TextAnalysisService>();
             // TextAnalyzer עם Factory שמושך סיסמה מה־appsettings
-            services.AddScoped<ITextAnalyzer>(provider =>
-            {
-                var config = provider.GetRequiredService<IConfiguration>();
-                var password = config["TextAnalyzerSettings:Password"];
+            //services.AddScoped<ITextAnalyzer>(provider =>
+            //{
+            //    var config = provider.GetRequiredService<IConfiguration>();
+            //    var password = config["TextAnalyzerSettings:Password"];
 
-                if (string.IsNullOrWhiteSpace(password))
-                    throw new Exception("TextAnalyzer password is missing in configuration!");
+            //    if (string.IsNullOrWhiteSpace(password))
+            //        throw new Exception("TextAnalyzer password is missing in configuration!");
 
-                return new TextAnalyzer(password);
-            });
+            //    return new TextAnalyzer(password);
+            //});
 
             // שירותים נוספים
             services.AddScoped<IEmployeeService, EmployeeService>();
@@ -47,6 +51,11 @@ namespace Service
             services.AddHttpClient<SimiliarWordsService>();
             services.AddScoped<ISimiliarWord, SimiliarWordsService>();
 
+
+           services.AddScoped<WordService>();
+
+            //זה דיקשנרי מיוחד בשביל המילים דומות שנשמר בזיכרון של ה־NaiveBase, לא קשור ל־DB
+            services.AddMemoryCache();
 
             // --- הגדרות Room (חדר וטאבלט) ---
             services.AddScoped<IRoomService, RoomService>();       // רישום הסרוויס

@@ -12,7 +12,6 @@ namespace Repository.Repositories
     public class RoomRepositoryv : IRoomRepository
     {
         private readonly Icontext _ctx;
-
         public RoomRepositoryv(Icontext context)
         {
             _ctx = context;
@@ -26,8 +25,6 @@ namespace Repository.Repositories
         {
             return await _ctx.Rooms.FirstOrDefaultAsync(r => r.Id == id);
         }
-
-        // 3. הוספת חדר חדש
         public async Task<Room> AddItem(Room item)
         {
             _ctx.Rooms.Add(item);
@@ -35,20 +32,15 @@ namespace Repository.Repositories
             return item;
         }
 
-        // 4. עדכון חדר קיים
         public async Task<Room> UpdateItem(int id, Room item)
         {
             var existingRoom = await GetById(id);
             if (existingRoom == null) return null;
-
-            // עדכון השדות
             existingRoom.RoomNumber = item.RoomNumber;
             existingRoom.IsTabletActive = item.IsTabletActive;
             await _ctx.Save();
             return existingRoom;
         }
-
-        // 5. מחיקת חדר
         public async Task DeleteItem(int id)
         {
             var room = await GetById(id);
@@ -59,20 +51,18 @@ namespace Repository.Repositories
             }
         }
 
-        // 6. הפונקציה המיוחדת שאנחנו צריכים בשביל ה-Setup!
-        // בתוך RoomRepository.cs
+
         public async Task<Room> GetByRoomNumberAsync(string roomNumber)
         {
-            Console.WriteLine($">>> [Repository] נכנסתי לפונקציה, מחפש את: {roomNumber}");
             try
             {
-                var room = await _ctx.Rooms.FirstOrDefaultAsync(r => r.RoomNumber == roomNumber);
-                Console.WriteLine($">>> [Repository] הפעולה ב-DB הסתיימה. האם נמצא חדר? {room != null}");
-                return room;
+                // Fetch the room from the database, returns null if not found
+                return await _ctx.Rooms.FirstOrDefaultAsync(r => r.RoomNumber == roomNumber);
             }
             catch (System.Exception ex)
             {
-                Console.WriteLine($">>> [Repository] שגיאה קריטית בגישה ל-DB: {ex.Message}");
+                // Log critical database/connection exceptions and rethrow
+                Console.WriteLine($">>> [Repository] Critical DB Error: {ex.Message}");
                 throw;
             }
         }

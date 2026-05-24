@@ -204,12 +204,25 @@ namespace Service.Services
 
                 var finalRequest = await _requestRepository.GetById(requestId);
 
-                //זה בעצם ללמידה שקורית רק עכשיו שמשהו לקח זה אומר שאכן הקטגוריה מתאימה
-                if (_analyzedWordsCache.TryRemove(requestId, out var words))
-                {
-                   
-                    await _algorithmics.InsertWordsIntoWordTable(words, finalRequest.CategoryId);
-                }
+            //זה בעצם ללמידה שקורית רק עכשיו שמשהו לקח זה אומר שאכן הקטגוריה מתאימה
+            // מנסים לשלוף את המילים מהזיכרון הזמני (העבודה הרגילה)
+            if (_analyzedWordsCache.TryRemove(requestId, out var words))
+            {
+                // המילים נמצאו בזיכרון! מעדכנים את מסד הנתונים
+                await _algorithmics.InsertWordsIntoWordTable(words, finalRequest.CategoryId);
+            }
+            else
+            {
+                // רשת ביטחון: הזיכרון נמחק או שהבקשה הוכנסה ידנית מ-SQL!
+                // ניקח את הטקסט המקורי של הבקשה ונפרק אותו למילים עכשיו
+                string text = finalRequest.Description;
+
+                // פירוק המשפט למילים בודדות (לפי רווחים)
+                List<string> backupWords = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+                // שליחה של המילים לעדכון בטבלה, בדיוק כמו מקודם
+                await _algorithmics.InsertWordsIntoWordTable(backupWords, finalRequest.CategoryId);
+            }
             return true;
         }
 

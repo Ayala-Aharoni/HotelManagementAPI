@@ -16,26 +16,23 @@ namespace Repository.Repositories
         {
             ctx = context;
         }
-
         public async Task<List<Request>> GetAll()
         {
             return await ctx.Requests
          .Include(r => r.Category)
          .Include(r => r.Employee)
-         .Include(r => r.Room) // <--- הוספת השורה הזו בשביל ה-GetAll של המנהל
+         .Include(r => r.Room)
          .ToListAsync();
         }
 
         public async Task<Request?> GetById(int id)
         {
-            // ב-FindAsync אי אפשר להשתמש ב-Include, אז עוברים ל-FirstOrDefaultAsync
             return await ctx.Requests
         .Include(r => r.Category)
         .Include(r => r.Employee)
-        .Include(r => r.Room) // <--- הוספת השורה הזו גם בשביל ה-GetById של המנהל
+        .Include(r => r.Room)
         .FirstOrDefaultAsync(r => r.RequestId == id);
         }
-
         public async Task<Request> AddItem(Request item)
         {
             await ctx.Requests.AddAsync(item);
@@ -47,7 +44,6 @@ namespace Repository.Repositories
         {
             var existing = await ctx.Requests.FindAsync(id);
             if (existing == null) return null;
-
             existing.Description = item.Description;
             existing.Status = item.Status;
             existing.CategoryId = item.CategoryId;
@@ -58,7 +54,6 @@ namespace Repository.Repositories
             return existing;
         }
 
-        //זו פונקציה שמנסה לעדכן ת הבקשה לסטטוס בטיפול ואת העובד שרוצה אותה 
         public async Task<bool> TryAssignRequestAsync(int requestId, int employeeId)
         {
             var rowsAffected = await ctx.Requests
@@ -69,7 +64,6 @@ namespace Repository.Repositories
 
             return rowsAffected > 0;
         }
-
 
         public async Task DeleteItem(int id)
         {
