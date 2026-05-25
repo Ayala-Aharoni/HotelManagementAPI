@@ -64,6 +64,15 @@ namespace Repository.Repositories
 
             return rowsAffected > 0;
         }
+        public async Task<bool> TryCompleteRequestAsync(int requestId, int employeeId)
+        {
+            var rowsAffected = await ctx.Requests
+                .Where(r => r.RequestId == requestId && r.Status == RequestStatus.InProgress && r.EmployeeId == employeeId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(r => r.Status, RequestStatus.Completed));
+
+            return rowsAffected > 0;
+        }
 
         public async Task DeleteItem(int id)
         {
@@ -73,6 +82,20 @@ namespace Repository.Repositories
                 ctx.Requests.Remove(existing);
                 await ctx.Save();
             }
+        }
+        public async Task<IEnumerable<Request>> GetByEmployeeIdAsync(int employeeId)
+        {
+            return await ctx.Requests
+                .Include(r => r.Room)
+                .Where(r => r.EmployeeId == employeeId)
+                .ToListAsync();
+        }
+        public async Task<IEnumerable<Request>> GetAvailableByCategoryAsync(int categoryId)
+        {
+            return await ctx.Requests
+                .Include(r => r.Room)
+                .Where(r => r.Status == RequestStatus.New && r.CategoryId == categoryId)
+                .ToListAsync();
         }
     }
 }

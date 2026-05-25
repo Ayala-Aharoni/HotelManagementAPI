@@ -1,4 +1,5 @@
 ﻿using Common.DTO;
+using Repository.Exception;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,13 +10,13 @@ namespace Service
 {
      public class TextAnalysisService
      {
-        // 1. הגדרת ה"טלפון" שדרכו נתקשר עם פייתון
+        
         private readonly HttpClient _httpClient;
         public TextAnalysisService(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
-        // 3. הפונקציה המרכזית שמקבלת טקסט ומחזירה רשימת מילים (Features)
+       
         public async Task<List<string>> AnalyzeTextAsync(string textToAnalyze)
         {
             // הכנת האובייקט לשליחה (חייב להתאים ל-content שכתבנו בפייתון)
@@ -36,7 +37,7 @@ namespace Service
             }
             catch (Exception ex)
             {
-                throw new Exception($"Python Text Analysis failed: {ex.Message}", ex);
+                throw new AppException($"Python Text Analysis failed: {ex.Message}");
             }
 
             return new List<string>();

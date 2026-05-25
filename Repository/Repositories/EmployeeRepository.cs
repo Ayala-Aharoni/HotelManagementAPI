@@ -18,32 +18,28 @@ namespace Repository.Repositories
         {
             ctx = context;
         }
-
         public async Task<List<Employee>> GetAll()
         {
             return await ctx.Employees
          .Include(e => e.Category)
          .ToListAsync();
         }
-
         public async Task<Employee?> GetById(int id)
         {
             return await ctx.Employees.FindAsync(id);
         }
-
         public async Task<Employee?> GetByEmailAsync(string email)
         {
-            return await ctx.Employees.FirstOrDefaultAsync(e => e.Email == email);
+            return await ctx.Employees
+                .Include(e => e.Category)
+                .FirstOrDefaultAsync(e => e.Email == email);
         }
-
-
         public async Task<Employee> AddItem(Employee item)
         {
             await ctx.Employees.AddAsync(item);
             await ctx.Save();
             return item;
         }
-
         public async Task<Employee> UpdateItem(int id, Employee item)
         {
             var existing = await ctx.Employees.FindAsync(id);
@@ -55,7 +51,6 @@ namespace Repository.Repositories
             await ctx.Save();
             return existing;
         }
-
         public async Task DeleteItem(int id)
         {
             var existing = await ctx.Employees.FindAsync(id);

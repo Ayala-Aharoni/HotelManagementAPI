@@ -17,15 +17,13 @@ namespace Service
     public class Algorithmics : IAlgorithmcs
     {
         private readonly INaiveBase _naiveBayes;
-      //  private readonly IRepository<Word> _wordRepo;
         private readonly WordService _wordService;
         private readonly ICategoryWordRepository _categoryWordRepo;
         private readonly TextAnalysisService _textAnalysis;
 
-        public Algorithmics( INaiveBase naiveBayes, /*IRepository<Word> wordRepo*/ ICategoryWordRepository categoryWordRepo, TextAnalysisService textAnalysis, WordService wordService)
+        public Algorithmics( INaiveBase naiveBayes,ICategoryWordRepository categoryWordRepo, TextAnalysisService textAnalysis, WordService wordService)
         {
             _naiveBayes = naiveBayes;
-           // _wordRepo = wordRepo;
             _categoryWordRepo = categoryWordRepo;
             _textAnalysis = textAnalysis;
             _wordService = wordService;

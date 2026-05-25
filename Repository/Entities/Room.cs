@@ -16,14 +16,9 @@ namespace Repository.Entities
         [Required]
         public string RoomNumber { get; set; } // מספר החדר (למשל "101")
 
-       
-
         [Required]
         public bool IsTabletActive { get; set; } = false; // האם הטאבלט הופעל בחדר?
 
-      
-
-     
         public virtual ICollection<Request> Requests { get; set; } = new List<Request>();
     }
 }

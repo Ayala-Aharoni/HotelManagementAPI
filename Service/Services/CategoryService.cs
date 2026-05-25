@@ -75,15 +75,15 @@ namespace Service.Services
             var hasRequests = allRequests.Any(r => r.CategoryId == id);
             if (hasRequests)
             {
-                throw new Exception("לא ניתן למחוק את הקטגוריה כיוון שישנן בקשות המשויכות אליה.");
+                throw new AppException("לא ניתן למחוק את הקטגוריה כיוון שישנן בקשות המשויכות אליה.", System.Net.HttpStatusCode.Conflict);
             }
             var allEmployees = await _employeeRepository.GetAll();
             var hasEmployees = allEmployees.Any(e => e.CategoryId == id);
             if (hasEmployees)
             {
-                throw new Exception("לא ניתן למחוק את הקטגוריה כיוון שישנם עובדים המשויכים אליה.");
+                throw new AppException("לא ניתן למחוק את הקטגוריה כיוון שישנם עובדים המשויכים אליה.", System.Net.HttpStatusCode.Conflict);
             }
-            await _categoryRepository.DeleteItem(id);
+          await _categoryRepository.DeleteItem(id);
         }
     }
 }

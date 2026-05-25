@@ -1,6 +1,7 @@
 using HotelAp.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Repository;
@@ -8,6 +9,7 @@ using Repository.Entities;
 using Repository.Interfaces;
 using Repository.Repositories;
 using Service;
+using Service.Hubs;
 using Service.Interfaces;
 using Service.Mappings; 
 using Service.Services;
@@ -17,7 +19,6 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Service.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,7 +104,8 @@ builder.Services.AddAutoMapper(typeof(CategoryProfile));
 ////////////////////////////////////////
 ///////////////////////////////////////
 
-
+builder.Services.AddDbContext<HotelDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 
 // רישום השירות שלך והגדרת ה-HttpClient שלו
@@ -130,6 +132,8 @@ builder.Services.AddCors(options =>
 
 //!
 var app = builder.Build();
+app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
+
 
 using (var scope = app.Services.CreateScope())
 {
@@ -137,8 +141,7 @@ using (var scope = app.Services.CreateScope())
     // קורא ל-LoadModel שכתבנו, שמושך הכל מה-DB לזיכרון
     await naiveBase.LoadModel();
 }
-//
-app.UseMiddleware<ExceptionMiddleware>();//זה בשביל השגיאותתת
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {

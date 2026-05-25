@@ -18,6 +18,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
+
 namespace Service.Services
 {
     public class EmployeeService: IEmployeeService
@@ -33,17 +34,14 @@ namespace Service.Services
             _configuration = configuration;
             _mapper = mapper;
         }
-        
         public async Task<string> Register(RegisterEmployeeDTO R)
         {
-            
             var existingEmployee = await _employeeRepository.GetByEmailAsync(R.Email);
             if (existingEmployee != null)
             {
                 throw new AppException.UserAlreadyExistsException();
             }
-            var category = (await _categoryRepository.GetAll())
-                            .FirstOrDefault(c => c.CategoryId == R.CategoryId);
+            var category = await _categoryRepository.GetById(R.CategoryId);
             if (category == null)
             {
                 throw new EntityNotFoundException("קטגוריה", R.CategoryId);
@@ -79,7 +77,7 @@ namespace Service.Services
            
             var existing = await _employeeRepository.GetById(id);
             if (existing == null)
-                throw new Exception($"עובד עם מזהה {id} לא נמצא");
+                throw new EntityNotFoundException("עובד", id);
             existing.Fullname = emp.Fullname;
             existing.Email = emp.Email;
             existing.Role = emp.Role.ToString();
@@ -87,7 +85,7 @@ namespace Service.Services
 
             if (!string.IsNullOrEmpty(emp.PassWord))
             {
-                existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(emp.PassWord); // בהמשך כדאי להוסיף פה Hash!
+                existing.PasswordHash = BCrypt.Net.BCrypt.HashPassword(emp.PassWord); 
             }
             await _employeeRepository.UpdateItem(id, existing);
         }
@@ -132,6 +130,6 @@ namespace Service.Services
             }
             await _employeeRepository.UpdateAvailabilityAsync(id, isAvailable);
         }
-
+        
     }
 }

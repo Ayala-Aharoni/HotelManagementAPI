@@ -23,9 +23,8 @@ namespace Repository.Entities
             await SaveChangesAsync();
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        public HotelDbContext(DbContextOptions<HotelDbContext> options) : base(options)
         {
-            optionsBuilder.UseSqlServer("server=DESKTOP-1VUANBN;database=HotelApDB;trusted_connection=true;TrustServerCertificate=True");
         }
 
         // פונקציה אחת שמרכזת ה-כ-ל

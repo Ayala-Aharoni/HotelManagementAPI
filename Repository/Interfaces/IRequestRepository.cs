@@ -10,6 +10,11 @@ namespace Repository.Interfaces
     public interface IRequestRepository:IRepository<Request>
     {
         Task<bool> TryAssignRequestAsync(int requestId, int employeeId);
+        Task<bool> TryCompleteRequestAsync(int requestId, int employeeId);
+
+        Task<IEnumerable<Request>> GetByEmployeeIdAsync(int employeeId);
+        Task<IEnumerable<Request>> GetAvailableByCategoryAsync(int categoryId);
+
 
     }
 }

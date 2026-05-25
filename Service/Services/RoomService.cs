@@ -31,27 +31,39 @@ namespace Service.Services
             _employeeRepository = employeeRepository;
         }
 
-        public async Task<AddRoomDTO> AddRoomAsync(AddRoomDTO roomDto)
+        public async Task<GetRoomDTO> AddRoomAsync(AddRoomDTO roomDto)
         {
-        
+            // 1. נוודא שלא שלחו לנו בטעות חדר בלי מספר
+            if (string.IsNullOrWhiteSpace(roomDto.RoomNumber))
+            {
+                throw new AppException("מספר החדר אינו יכול להיות ריק", HttpStatusCode.BadRequest);
+            }
+
+            // 2. בדיקה אם החדר כבר קיים
             var existingRoom = await _roomRepository.GetByRoomNumberAsync(roomDto.RoomNumber);
             if (existingRoom != null)
             {
                 throw new AppException($"חדר מספר {roomDto.RoomNumber} כבר קיים במערכת", HttpStatusCode.Conflict);
             }
+
+            // 3. יצירת האובייקט
             var roomEntity = new Room
             {
                 RoomNumber = roomDto.RoomNumber,
-                IsTabletActive = false 
+                IsTabletActive = false
             };
+
+            // 4. שמירה במסד הנתונים (הפונקציה AddItem מעדכנת את ה-Id בתוך roomEntity)
             var createdRoom = await _roomRepository.AddItem(roomEntity);
 
-            return new AddRoomDTO
+            // 5. החזרת DTO מלא שכולל את ה-Id שנוצר!
+            return new GetRoomDTO
             {
-                RoomNumber = createdRoom.RoomNumber
+                Id = createdRoom.Id,
+                RoomNumber = createdRoom.RoomNumber,
+                IsTabletActive = createdRoom.IsTabletActive
             };
         }
-
         public async Task<IEnumerable<GetRoomDTO>> GetAllRoomsAsync()
         {
             var rooms = await _roomRepository.GetAll();
@@ -62,35 +74,41 @@ namespace Service.Services
                 IsTabletActive = r.IsTabletActive
             }).ToList();
         }
-        public async Task<string> SetupRoomAsync(RoomDTO R)
+        public async Task<string> SetupRoomAsync(RoomDTO setupDto)
         {
-            if (R == null)
+            // 1. בדיקת קלט בסיסית
+            if (setupDto == null)
             {
                 throw new AppException("נתוני הגדרת החדר לא התקבלו.", HttpStatusCode.BadRequest);
             }
 
-          
-            var admin = await _employeeRepository.GetByEmailAsync(R.AdminEmail);
-            if (admin == null || !BCrypt.Net.BCrypt.Verify(R.AdminPassword, admin.PasswordHash))
+            // 2. אימות זהות (כל עובד רשום יכול לבצע את הפעולה)
+            var employee = await _employeeRepository.GetByEmailAsync(setupDto.AdminEmail);
+            if (employee == null || !BCrypt.Net.BCrypt.Verify(setupDto.AdminPassword, employee.PasswordHash))
             {
-                throw new AppException("אימות נכשל - אין הרשאה לבצע הגדרת טאבלט", HttpStatusCode.Unauthorized);
-            }
-            var room = await _roomRepository.GetByRoomNumberAsync(R.RoomNumber);
-            if (room == null)
-            {
-                throw new EntityNotFoundException("חדר", R.RoomNumber);
+                throw new AppException("אימות נכשל - דוא\"ל או סיסמה שגויים.", HttpStatusCode.Unauthorized);
             }
 
+            // 3. מציאת החדר
+            var room = await _roomRepository.GetByRoomNumberAsync(setupDto.RoomNumber);
+            if (room == null)
+            {
+                throw new EntityNotFoundException("חדר", setupDto.RoomNumber);
+            }
+
+            // 4. בדיקה שאין טאבלט כפול
             if (room.IsTabletActive)
             {
-                throw new AppException($"חדר מספר {R.RoomNumber} כבר מחובר לטאבלט פעיל. יש לנתק את הטאבלט הקודם לפני חיבור חדש.", HttpStatusCode.Conflict);
+                throw new AppException($"חדר מספר {setupDto.RoomNumber} כבר מחובר לטאבלט פעיל. יש לנתק את הטאבלט הקודם לפני חיבור חדש.", HttpStatusCode.Conflict);
             }
+
+            // 5. שמירת השינוי ויצירת טוקן
             room.IsTabletActive = true;
             await _roomRepository.UpdateItem(room.Id, room);
+
             var token = GenerateToken(room);
             return token;
         }
-
         private string GenerateToken(Room room)
         {
             try

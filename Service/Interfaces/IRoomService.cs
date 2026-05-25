@@ -11,7 +11,8 @@ namespace Service.Interfaces
     public interface IRoomService
     {
         Task<string> SetupRoomAsync(RoomDTO R);
-        Task<AddRoomDTO> AddRoomAsync(AddRoomDTO roomDto);
         Task<IEnumerable<GetRoomDTO>> GetAllRoomsAsync();
+        Task<GetRoomDTO> AddRoomAsync(AddRoomDTO roomDto);
+
     }
 }

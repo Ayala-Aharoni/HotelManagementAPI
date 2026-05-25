@@ -20,29 +20,25 @@ namespace Service
             _httpClient = httpClient;
         }
 
-        // הפונקציה האחת והיחידה - מקבלת רשימת מילים במכה אחת ומחזירה מילון
+       
         public async Task<Dictionary<string, List<PythonMatchDTO>>> GetSimilarWordsFromPython(List<string> words, List<string> allKeywords, double threshold)
         {
             Console.WriteLine($"[Service] Asking Python for matches for {words.Count} words...");
 
             try
             {
-                // יצירת האובייקט שיישלח כ-JSON
+                
                 var requestBody = new
                 {
                     words = words, // שולחים רשימה
                     all_keywords = allKeywords,
                     threshold = threshold
                 };
-
-                // שליחת POST לשרת פייתון לכתובת הרגילה שלך!
                 var response = await _httpClient.PostAsJsonAsync("http://127.0.0.1:8000/find_similar_in_dictionary", requestBody);
-
                 if (response.IsSuccessStatusCode)
                 {
                     // קבלת התשובה: מילון שבו המפתח הוא המילה, והערך הוא רשימת ההתאמות שלה
                     var result = await response.Content.ReadFromJsonAsync<Dictionary<string, List<PythonMatchDTO>>>();
-
                     if (result != null)
                     {
                         Console.WriteLine($"[Service] Python returned results successfully.");
@@ -57,9 +53,7 @@ namespace Service
             catch (Exception ex)
             {
                 Console.WriteLine($"[Service] Communication Exception: {ex.Message}");
-            }
-
-            // במקרה של שגיאה נחזיר מילון ריק כדי שהקוד לא יקרוס
+            }            
             return new Dictionary<string, List<PythonMatchDTO>>();
         }
     }

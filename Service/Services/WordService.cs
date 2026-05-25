@@ -27,7 +27,6 @@ namespace Service.Services
             {
                 return existing;
             }
-
             var word = new Word
             {
                 Text = wordText
